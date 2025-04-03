@@ -33,4 +33,5 @@
 
 # Build directory
 /build/
+/debug_build/
 

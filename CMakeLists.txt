@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.13)
 project(3d-renderer)
 
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
 set(CMAKE_CXX_STANDARD 20)
 
 add_subdirectory(src)

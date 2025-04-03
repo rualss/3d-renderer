@@ -2,30 +2,28 @@
 
 #include "glm/glm.hpp"
 
-#include <glm/ext/matrix_float4x4.hpp>
-#include <glm/ext/vector_float3.hpp>
+#include "glm/ext/matrix_float4x4.hpp"
+#include "glm/ext/vector_float3.hpp"
+#include "linalg.h"
 
 #include <vector>
 #include <array>
 
 namespace renderer {
 
-using Vec3 = glm::vec3;
-using Vec4 = glm::vec4;
-using Mat4 = glm::mat4;
-using CoordType = float;
-
 class Polygon {
 public:
     static constexpr size_t kVertexCount = 3;
 
-    Polygon() = delete;
-    explicit Polygon(const std::array<Vec3, kVertexCount>& vertices) : vertices_(vertices) {
-    }
+    explicit Polygon(const std::array<Vec3, kVertexCount>& vertices);
 
-    std::array<Vec3, kVertexCount> GetVertices() const;
+    const std::array<Vec3, kVertexCount>& GetVertices() const;
+    std::array<Vec3, kVertexCount>& GetVertices();
+    void SetColor(const Color& color);
+    Color GetColor() const;
 
 private:
+    Color color_;
     std::array<Vec3, kVertexCount> vertices_;
 };
 

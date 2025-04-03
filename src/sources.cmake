@@ -4,4 +4,5 @@ add_library(3d_renderer
     renderer.cpp
     polygon.cpp
     world.cpp
+    geometry.cpp
 )
