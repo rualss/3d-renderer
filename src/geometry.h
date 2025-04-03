@@ -7,10 +7,11 @@ namespace renderer {
 
 class Line2 {
 public:
-    Line2(Vec2 p1, Vec2 p2);
+    Line2(const Vec2& p1, const Vec2& p2);
 
     CoordType GetXByY(CoordType y) const;
     CoordType GetYByX(CoordType x) const;
+    Vec3 GetCoefficients() const;
 
 private:
     CoordType a_;
@@ -20,7 +21,7 @@ private:
 
 class Plane {
 public:
-    Plane(Vec3 p1, Vec3 p2, Vec3 p3);
+    Plane(const Vec3& p1, const Vec3& p2, const Vec3& p3);
     Plane(const std::array<Vec3, Polygon::kVertexCount>& vertices);
     Plane(const Polygon& polygon);
 

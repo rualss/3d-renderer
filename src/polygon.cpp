@@ -3,6 +3,9 @@
 
 namespace renderer {
 
+Polygon::Polygon(const Vec3& v1, const Vec3& v2, const Vec3& v3) : vertices_({v1, v2, v3}) {
+}
+
 Polygon::Polygon(const std::array<Vec3, kVertexCount>& vertices) : vertices_(vertices) {
 }
 

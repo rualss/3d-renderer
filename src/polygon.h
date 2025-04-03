@@ -15,6 +15,7 @@ class Polygon {
 public:
     static constexpr size_t kVertexCount = 3;
 
+    Polygon(const Vec3& v1, const Vec3& v2, const Vec3& v3);
     explicit Polygon(const std::array<Vec3, kVertexCount>& vertices);
 
     const std::array<Vec3, kVertexCount>& GetVertices() const;

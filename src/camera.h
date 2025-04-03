@@ -7,9 +7,9 @@ namespace renderer {
 class Camera {
 public:
     Camera() = default;
-    Camera(Vec3 focal_point, CoordType near_dist, CoordType far_dist, CoordType fov_y);
+    Camera(const Vec3& focal_point, CoordType near_dist, CoordType far_dist, CoordType fov_y);
 
-    Vec3 GetFocalPoint() const;
+    const Vec3& GetFocalPoint() const;
 
     CoordType GetFOV() const;
 

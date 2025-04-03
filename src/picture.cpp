@@ -13,7 +13,7 @@ Picture::Picture(Height height, Width width) {
     z_buffer_.resize(width_ * height_, 2);
 }
 
-void Picture::SetPixel(Index x, Index y, Color color) {
+void Picture::SetPixel(Index x, Index y, const Color& color) {
     assert(x >= 0 && x < width_ && "x coordinates out of bounds");
     assert(y >= 0 && y < height_ && "y coordinates out of bounds");
     assert(color[0] >= 0 && color[0] <= 255 && color[0] >= 0 && color[0] <= 255 && color[0] >= 0 &&

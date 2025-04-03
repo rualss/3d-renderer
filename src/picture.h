@@ -8,7 +8,7 @@ namespace renderer {
 class Picture {
 public:
     Picture(Height height, Width width);
-    void SetPixel(Index x, Index y, Color color);
+    void SetPixel(Index x, Index y, const Color& color);
     const Color& GetPixel(Index x, Index y) const;
     const std::vector<Color>& GetPixels() const;
     void SetZBufferValue(Index x, Index y, CoordType z);

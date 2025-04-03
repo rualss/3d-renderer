@@ -2,11 +2,11 @@
 
 namespace renderer {
 
-Camera::Camera(Vec3 focal_point, CoordType near_dist, CoordType far_dist, CoordType fov_y)
+Camera::Camera(const Vec3& focal_point, CoordType near_dist, CoordType far_dist, CoordType fov_y)
     : focal_point_(focal_point), near_dist_(near_dist), far_dist_(far_dist), fov_y_(fov_y) {
 }
 
-Vec3 Camera::GetFocalPoint() const {
+const Vec3& Camera::GetFocalPoint() const {
     return focal_point_;
 }
 
