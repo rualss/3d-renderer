@@ -2,19 +2,20 @@
 
 namespace renderer {
 
-World::World(const std::vector<Polygon>& polygons) : polygons_(polygons) {
+World::World() = default;
+World::World(const std::vector<Mesh>& meshes) : meshes_(meshes) {
 }
 
-void World::AddPolygon(const Polygon& polygon) {
-    polygons_.push_back(polygon);
+const std::vector<Mesh>& World::GetMeshes() const {
+    return meshes_;
 }
 
-const std::vector<Polygon>& World::GetPolygons() const {
-    return polygons_;
+void World::AddMesh(const Mesh& mesh) {
+    meshes_.push_back(mesh);
 }
 
-std::vector<Polygon>& World::GetPolygons() {
-    return polygons_;
+void World::AddMesh(Mesh&& mesh) {
+    meshes_.emplace_back(std::move(mesh));
 }
 
 }  // namespace renderer

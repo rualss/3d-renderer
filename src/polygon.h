@@ -1,12 +1,6 @@
 #pragma once
 
-#include "glm/glm.hpp"
-
-#include "glm/ext/matrix_float4x4.hpp"
-#include "glm/ext/vector_float3.hpp"
 #include "linalg.h"
-
-#include <vector>
 #include <array>
 
 namespace renderer {
@@ -17,11 +11,18 @@ public:
 
     Polygon(const Vec3& v1, const Vec3& v2, const Vec3& v3);
     explicit Polygon(const std::array<Vec3, kVertexCount>& vertices);
+    Polygon(const Polygon& other);
+    Polygon(Polygon&& other);
+    Polygon& operator=(const Polygon& other);
+    Polygon& operator=(Polygon&& other);
+    ~Polygon();
+    void Swap(Polygon& other);
 
     const std::array<Vec3, kVertexCount>& GetVertices() const;
     std::array<Vec3, kVertexCount>& GetVertices();
     void SetColor(const Color& color);
     Color GetColor() const;
+    void ApplyMatrix(const Mat4& mat);
 
 private:
     Color color_;

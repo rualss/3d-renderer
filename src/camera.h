@@ -1,5 +1,5 @@
 #pragma once
-#include "glm/glm.hpp"
+
 #include "linalg.h"
 
 namespace renderer {

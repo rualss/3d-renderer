@@ -1,9 +1,12 @@
 #include "renderer.h"
+#include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <glm/ext/matrix_transform.hpp>
 #include <glm/trigonometric.hpp>
 #include <iostream>
 #include <utility>
+#include <vector>
 #include "linalg.h"
 #include "picture.h"
 #include "polygon.h"
@@ -16,6 +19,19 @@
 namespace renderer {
 
 namespace {
+
+std::vector<Polygon> GetPolygons(const World& world) {
+    std::vector<Polygon> polygons;
+    for (const Mesh& mesh : world.GetMeshes()) {
+        Mat4 translate_to_world_origin = glm::translate(Mat4(1.), mesh.GetLocalOrigin());
+        for (const Polygon& polygon : mesh.GetPolygons()) {
+            Polygon translated_polygon(polygon);
+            translated_polygon.ApplyMatrix(translate_to_world_origin);
+            polygons.push_back(translated_polygon);
+        }
+    }
+    return polygons;
+}
 
 Vec3 TransformVector(const Mat4& transformation_matrix, const Vec3& vector) {
     Vec4 homogeneous(vector, 1.0);
@@ -162,7 +178,8 @@ void DrawPolygon(Picture& picture, const Polygon& polygon) {
 
 Picture Renderer::Render(const World& world, const Camera& camera, Height height, Width width) {
     CoordType aspect_ratio = GetAspectRatio(height, width);
-    std::vector<Polygon> transformed_polygons = Project(world.GetPolygons(), camera, aspect_ratio);
+    std::vector<Polygon> polygons = GetPolygons(world);
+    std::vector<Polygon> transformed_polygons = Project(polygons, camera, aspect_ratio);
     for (Index i = 0; i < transformed_polygons.size(); ++i) {
         TransformPolygonToScreenSpace(transformed_polygons[i], height, width);
         SortPolygonVertices(transformed_polygons[i]);

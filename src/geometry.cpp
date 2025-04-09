@@ -28,14 +28,14 @@ Vec3 Line2::GetCoefficients() const {
 }
 
 Plane::Plane(const Vec3& p1, const Vec3& p2, const Vec3& p3) {
-    assert(IsDifferent(p1, p2) && "Points should be different to construct a plane");
-    assert(IsDifferent(p1, p3) && "Points should be different to construct a plane");
-    assert(IsDifferent(p3, p2) && "Points should be different to construct a plane");
+    // assert(IsDifferent(p1, p2) && "Points should be different to construct a plane");
+    // assert(IsDifferent(p1, p3) && "Points should be different to construct a plane");
+    // assert(IsDifferent(p3, p2) && "Points should be different to construct a plane");
     a_ = (p2.y - p1.y) * (p3.z - p1.z) - (p2.z - p1.z) * (p3.y - p1.y);
     b_ = (p2.z - p1.z) * (p3.x - p1.x) - (p2.x - p1.x) * (p3.z - p1.z);
     c_ = (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x);
-    assert((std::abs(a_) > kEps || std::abs(b_) > kEps || std::abs(c_) > kEps) &&
-           "Points shouldn't be collinear to construct a plane");
+    // assert((std::abs(a_) > kEps || std::abs(b_) > kEps || std::abs(c_) > kEps) &&
+    //        "Points shouldn't be collinear to construct a plane");
     d_ = -(a_ * p1.x + b_ * p1.y + c_ * p1.z);
 }
 

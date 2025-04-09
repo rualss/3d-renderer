@@ -31,7 +31,8 @@
 *.out
 *.app
 
-# Build directory
+# Build files
 /build/
 /debug_build/
-
+compile_commands.json
+/.cache/
