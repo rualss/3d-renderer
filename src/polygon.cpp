@@ -1,11 +1,14 @@
 #include "polygon.h"
+#include <glm/ext/quaternion_geometric.hpp>
 
 namespace renderer {
 
-Polygon::Polygon(const Vec3& v1, const Vec3& v2, const Vec3& v3) : vertices_({v1, v2, v3}) {
+Polygon::Polygon(const Vec3& v1, const Vec3& v2, const Vec3& v3, Color color)
+    : vertices_({v1, v2, v3}), color_(color) {
 }
 
-Polygon::Polygon(const std::array<Vec3, kVertexCount>& vertices) : vertices_(vertices) {
+Polygon::Polygon(const std::array<Vec3, kVertexCount>& vertices, Color color)
+    : vertices_(vertices), color_(color) {
 }
 
 Polygon::Polygon(const Polygon& other) : color_(other.color_), vertices_(other.vertices_) {
@@ -33,14 +36,6 @@ void Polygon::Swap(Polygon& other) {
     vertices_.swap(other.vertices_);
 }
 
-const std::array<Vec3, Polygon::kVertexCount>& Polygon::GetVertices() const {
-    return vertices_;
-}
-
-std::array<Vec3, Polygon::kVertexCount>& Polygon::GetVertices() {
-    return vertices_;
-}
-
 void Polygon::SetColor(const Color& color) {
     color_ = color;
 }
@@ -54,6 +49,14 @@ void Polygon::ApplyMatrix(const Mat4& mat) {
         Vec4 tmp(vertices_[i], 1.);
         vertices_[i] = Vec3(mat * tmp);
     }
+}
+
+Vec3& Polygon::operator[](Index i) {
+    return vertices_[i];
+}
+
+const Vec3& Polygon::operator[](Index i) const {
+    return vertices_[i];
 }
 
 }  // namespace renderer

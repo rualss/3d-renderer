@@ -1,4 +1,5 @@
 #include "src/picture.h"
+#include "src/polygon.h"
 #include "src/renderer.h"
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
@@ -21,8 +22,10 @@ Picture GetPic(const Mesh& cat) {
 int main() {
     Mesh cat("../data/cat.obj");
     cat.SetColorsRandomly();
-    cat.SetLocalOrigin({0, -10, -50});
+    cat.SetLocalOrigin({0, -12, -20});
     cat.ApplyMatrix(glm::scale(Mat4(1.), {0.05, 0.05, 0.05}));
+    // Mesh cat;
+    // cat.AddPolygon(Polygon({0, 0, -0.05}, {0.25, 1, -10}, {-0.25, 1, -10}, {255, 0, 0}));
     Index height = 600;
     Index width = 800;
 
@@ -52,6 +55,6 @@ int main() {
 
         window.display();
 
-        cat.ApplyMatrix(glm::rotate(Mat4(1.), glm::radians(0.5), {0, 1, 0}));
+        cat.ApplyMatrix(glm::rotate(Mat4(1.), glm::radians(2.), {0, 1, 0}));
     }
 }

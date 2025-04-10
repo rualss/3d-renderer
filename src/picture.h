@@ -13,6 +13,8 @@ public:
     const std::vector<Color>& GetPixels() const;
     void SetZBufferValue(Index x, Index y, CoordType z);
     CoordType GetZBufferValue(Index x, Index y) const;
+    Index GetHeight() const;
+    Index GetWidth() const;
 
 private:
     Index height_;

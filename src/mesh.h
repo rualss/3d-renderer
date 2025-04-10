@@ -30,7 +30,9 @@ public:
     void SetColorsRandomly();
 
 private:
+    static constexpr Vec3 kDefaultLocalOrigin = {0, 0, 0};
+
     std::vector<Polygon> polygons_;
-    Vec3 local_origin_;
+    Vec3 local_origin_ = kDefaultLocalOrigin;
 };
 }  // namespace renderer

@@ -33,11 +33,7 @@ void OBJParser::Parse() {
 void OBJParser::ReadVertex(std::istream& stream) {
     Vec3 vertex;
     for (Index i = 0; i < 3 && (stream >> vertex[i]); ++i) {
-        std::cout << vertex[i] << ' ';
     }
-    std::cout << '\n';
-    std::cout << vertex[0] << ' ' << vertex[1] << ' ' << vertex[2] << '\n';
-    std::cout << vertex.x << ' ' << vertex.y << ' ' << vertex.z << "\n\n";
     vertices_.emplace_back(std::move(vertex));
 }
 

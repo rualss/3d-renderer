@@ -42,4 +42,12 @@ CoordType Picture::GetZBufferValue(Index x, Index y) const {
     return z_buffer_[width_ * y + x];
 }
 
+Index Picture::GetHeight() const {
+    return height_;
+}
+
+Index Picture::GetWidth() const {
+    return width_;
+}
+
 }  // namespace renderer

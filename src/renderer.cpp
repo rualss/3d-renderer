@@ -1,8 +1,11 @@
 #include "renderer.h"
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cmath>
 #include <glm/ext/matrix_transform.hpp>
+#include <glm/geometric.hpp>
+#include <glm/gtc/matrix_access.hpp>
 #include <glm/trigonometric.hpp>
 #include <iostream>
 #include <utility>
@@ -12,7 +15,6 @@
 #include "polygon.h"
 #include "world.h"
 #include "camera.h"
-#include "geometry.h"
 
 #include "glm/ext.hpp"
 
@@ -20,52 +22,17 @@ namespace renderer {
 
 namespace {
 
-std::vector<Polygon> GetPolygons(const World& world) {
-    std::vector<Polygon> polygons;
-    for (const Mesh& mesh : world.GetMeshes()) {
-        Mat4 translate_to_world_origin = glm::translate(Mat4(1.), mesh.GetLocalOrigin());
-        for (const Polygon& polygon : mesh.GetPolygons()) {
-            Polygon translated_polygon(polygon);
-            translated_polygon.ApplyMatrix(translate_to_world_origin);
-            polygons.push_back(translated_polygon);
-        }
-    }
-    return polygons;
-}
-
-Vec3 TransformVector(const Mat4& transformation_matrix, const Vec3& vector) {
+void TransformVector(const Mat4& transformation_matrix, Vec3& vector) {
     Vec4 homogeneous(vector, 1.0);
     homogeneous = transformation_matrix * homogeneous;
     assert(std::abs(homogeneous.w) > kEps && "TransformVector: Point went to infinity");
-    return Vec3(homogeneous.x, homogeneous.y, homogeneous.z) / homogeneous.w;
+    vector = Vec3(homogeneous / homogeneous.w);
 }
 
-Polygon TransformPolygon(const Mat4& transformation_matrix,
-                         const Polygon& polygon) {  // TODO maybe inplace will be faster
-    std::array<Vec3, 3> transformed_vertices = polygon.GetVertices();
-    for (size_t i = 0; i < 3; ++i) {
-        transformed_vertices[i] = TransformVector(transformation_matrix, transformed_vertices[i]);
+void TransformPolygon(const Mat4& transformation_matrix, Polygon& polygon) {
+    for (size_t i = 0; i < Polygon::kVertexCount; ++i) {
+        TransformVector(transformation_matrix, polygon[i]);
     }
-    Polygon transformed_polygon(transformed_vertices);
-    transformed_polygon.SetColor(polygon.GetColor());
-    return transformed_polygon;
-}
-
-std::vector<Polygon> TransformPolygons(const Mat4& transformation_matrix,
-                                       const std::vector<Polygon>& polygons) {
-    std::vector<Polygon> transformed_polygons = polygons;
-    for (Polygon& polygon : transformed_polygons) {
-        polygon = TransformPolygon(transformation_matrix, polygon);
-    }
-    return transformed_polygons;
-}
-
-std::vector<Polygon> Project(const std::vector<Polygon>& polygons, const Camera& camera,
-                             CoordType aspect_ratio) {
-    Mat4 view_translate = Mat4(1.);  // temporary
-    Mat4 projection_matrix = glm::perspective(glm::radians(camera.GetFOV()), aspect_ratio,
-                                              camera.GetNearDist(), camera.GetFarDist());
-    return TransformPolygons(projection_matrix * view_translate, polygons);
 }
 
 CoordType GetAspectRatio(Height height, Width width) {
@@ -73,26 +40,12 @@ CoordType GetAspectRatio(Height height, Width width) {
 }
 
 void TransformPolygonToScreenSpace(Polygon& polygon, Height height, Width width) {
-    std::array<Vec3, Polygon::kVertexCount>& vertices = polygon.GetVertices();
+    CoordType real_height = static_cast<CoordType>(height);
+    CoordType real_width = static_cast<CoordType>(width);
 
     for (Index i = 0; i < Polygon::kVertexCount; ++i) {
-        vertices[i].x = std::round(static_cast<CoordType>(width) * ((vertices[i].x + 1.) / 2.));
-        vertices[i].y = std::round(static_cast<CoordType>(height) * ((1. - vertices[i].y) / 2.));
-        vertices[i].x = std::clamp(vertices[i].x, 0., static_cast<CoordType>(width) - 1.);
-        vertices[i].y = std::clamp(vertices[i].y, 0., static_cast<CoordType>(height) - 1.);
-    }
-}
-
-void SortPolygonVertices(Polygon& polygon) {
-    std::array<Vec3, Polygon::kVertexCount>& vertices = polygon.GetVertices();
-    if (vertices[0].y > vertices[1].y) {
-        std::swap(vertices[0], vertices[1]);
-    }
-    if (vertices[1].y > vertices[2].y) {
-        std::swap(vertices[1], vertices[2]);
-    }
-    if (vertices[0].y > vertices[1].y) {
-        std::swap(vertices[0], vertices[1]);
+        polygon[i].x = real_width * ((polygon[i].x + 1.) / 2.);
+        polygon[i].y = real_height * ((1. - polygon[i].y) / 2.);
     }
 }
 
@@ -103,74 +56,170 @@ void UpdatePicture(Picture& picture, Index i, Index j, CoordType z, Color color)
     }
 }
 
-struct HorizontalSlice {
-    Index left_x;
-    Index right_x;
-};
-
-HorizontalSlice GetHorizontalSlice(Index y, const std::array<Vec3, Polygon::kVertexCount>& vertices,
-                                   const Line2& line01, const Line2& line02, const Line2& line12) {
-    assert(vertices[0].y <= vertices[1].y && vertices[1].y <= vertices[2].y &&
-           "GetHorizontalSlice: Polygon vertices must be sorted by y");
-    assert(vertices[0].y <= y && y <= vertices[2].y && "Slice should be in polygon");
-
-    HorizontalSlice slice = {0, -1};
-    if (y == vertices[0].y && y == vertices[1].y && y == vertices[2].y) {
-        slice.left_x = static_cast<Index>(vertices[0].x);
-        slice.left_x = std::min(slice.left_x, static_cast<Index>(vertices[1].x));
-        slice.left_x = std::min(slice.left_x, static_cast<Index>(vertices[2].x));
-        slice.right_x = static_cast<Index>(vertices[0].x);
-        slice.right_x = std::max(slice.left_x, static_cast<Index>(vertices[1].x));
-        slice.right_x = std::max(slice.left_x, static_cast<Index>(vertices[2].x));
-        return slice;
-    }
-    if (y == vertices[0].y && y == vertices[1].y) {
-        slice.left_x = std::min(vertices[0].x, vertices[1].x);
-        slice.right_x = std::max(vertices[0].x, vertices[1].x);
-        return slice;
-    }
-    if (y == vertices[1].y && y == vertices[2].y) {
-        slice.left_x = std::min(vertices[1].x, vertices[2].x);
-        slice.right_x = std::max(vertices[1].x, vertices[2].x);
-        return slice;
-    }
-    slice.left_x = static_cast<Index>(line02.GetXByY(y));
-    if (y < vertices[1].y) {
-        slice.right_x = static_cast<Index>(line01.GetXByY(y));
-    } else {
-        slice.right_x = static_cast<Index>(line12.GetXByY(y));
-    }
-    if (slice.left_x > slice.right_x) {
-        std::swap(slice.left_x, slice.right_x);
-    }
-    return slice;
+Vec3 Barycentric(Vec2 p, Polygon polygon) {
+    Vec2 a = Vec2(polygon[0]);
+    Vec2 b = Vec2(polygon[1]);
+    Vec2 c = Vec2(polygon[2]);
+    Vec2 v0 = b - a;
+    Vec2 v1 = c - a;
+    Vec2 v2 = p - a;
+    CoordType inv_denominator = 1. / (v0.x * v1.y - v1.x * v0.y);
+    Vec3 barycentric;
+    barycentric[1] = (v2.x * v1.y - v1.x * v2.y) * inv_denominator;
+    barycentric[2] = (v0.x * v2.y - v2.x * v0.y) * inv_denominator;
+    barycentric[0] = 1.0 - barycentric[1] - barycentric[2];
+    return barycentric;
 }
 
-CoordType GetPolygonZProjection(Vec2 xy, const std::array<Vec3, Polygon::kVertexCount>& vertices,
-                                const Plane& polygon_plane) {
-    Vec4 plane_coefs = polygon_plane.GetCoefficients();
-    assert(std::abs(plane_coefs.z) > kEps && "Polygon shouldn't be perpendicular to view plane");
-    return polygon_plane.GetZByXY(xy);
+bool IsInsidePolygon(const Vec3 barycentric_coordinates) {
+    return barycentric_coordinates.x <= 1.0 && barycentric_coordinates.x >= 0.0 &&
+           barycentric_coordinates.y <= 1.0 && barycentric_coordinates.y >= 0.0 &&
+           barycentric_coordinates.z <= 1.0 && barycentric_coordinates.z >= 0.0;
+}
+
+Index RoundDown(CoordType coordinate) {
+    return static_cast<size_t>(std::max(0.0, std::floor(coordinate)));
+}
+
+Index RoundUp(CoordType coordinate) {
+    return static_cast<size_t>(std::ceil(coordinate));
+}
+
+CoordType CalculateZ(const Vec3 barycentric, const Polygon& polygon) {
+    return barycentric[0] * polygon[0].z + barycentric[1] * polygon[1].z +
+           barycentric[2] * polygon[2].z;
 }
 
 void DrawPolygon(Picture& picture, const Polygon& polygon) {
-    const std::array<Vec3, Polygon::kVertexCount>& vertices = polygon.GetVertices();
-    assert(vertices[0].y <= vertices[1].y && vertices[1].y <= vertices[2].y &&
-           "To draw polygon vertices must be sorted by y");
-    Plane polygon_plane(polygon);
-    if (std::abs(polygon_plane.GetCoefficients().z) < kEps) {
-        return;
+    Index min_x = picture.GetWidth() + picture.GetHeight() + 1;
+    Index min_y = picture.GetWidth() + picture.GetHeight() + 1;
+    Index max_x = -1;
+    Index max_y = -1;
+    Vec3 bebra = Barycentric(polygon[0] * 0.3 + polygon[1] * 0.3 + polygon[2] * 0.4, polygon);
+    for (int i = 0; i < Polygon::kVertexCount; ++i) {
+        min_x = std::min(RoundDown(polygon[i].x), min_x);
+        min_y = std::min(RoundDown(polygon[i].y), min_y);
+        max_x = std::max(RoundUp(polygon[i].x), max_x);
+        max_y = std::max(RoundUp(polygon[i].y), max_y);
     }
-    Line2 line01(vertices[0], vertices[1]);
-    Line2 line02(vertices[0], vertices[2]);
-    Line2 line12(vertices[1], vertices[2]);
+    // assert("bounded dimensions are not OK" && max_x < 2 * screen->GetWidth() &&
+    //        max_y < 2 * screen->GetHeight());
+    min_x = std::max(0, min_x);
+    min_y = std::max(0, min_y);
+    max_x = std::min((picture.GetWidth() - 1), max_x);
+    max_y = std::min((picture.GetHeight() - 1), max_y);
 
-    for (Index i = vertices[0].y; i <= vertices[2].y; ++i) {
-        HorizontalSlice slice = GetHorizontalSlice(i, vertices, line01, line02, line12);
-        for (int j = slice.left_x; j <= slice.right_x; ++j) {
-            UpdatePicture(picture, i, j, GetPolygonZProjection({j, i}, vertices, polygon_plane),
-                          polygon.GetColor());
+    for (Index x = min_x; x <= max_x; ++x) {
+        for (Index y = min_y; y <= max_y; ++y) {
+            Vec2 point_to_check = {static_cast<CoordType>(x) + 0.5,
+                                   static_cast<CoordType>(y) + 0.5};
+            Vec3 barycentric = Barycentric(point_to_check, polygon);
+            if (IsInsidePolygon(Barycentric(point_to_check, polygon))) {
+                UpdatePicture(picture, y, x, CalculateZ(barycentric, polygon), polygon.GetColor());
+            }
         }
+    }
+}
+
+bool IsVisible(const Polygon& polygon) {
+    Vec3 look_dir = polygon[0];
+    return glm::dot(look_dir, glm::normalize(glm::cross(polygon[1] - polygon[0],
+                                                        polygon[2] - polygon[0]))) < 0;
+}
+
+std::vector<Polygon> GetPolygons(const World& world) {
+    std::vector<Polygon> polygons;
+    for (const Mesh& mesh : world.GetMeshes()) {
+        Mat4 translate_to_world_origin = glm::translate(Mat4(1.), mesh.GetLocalOrigin());
+        for (const Polygon& polygon : mesh.GetPolygons()) {
+            Polygon translated_polygon(polygon);
+            translated_polygon.ApplyMatrix(translate_to_world_origin);
+            if (IsVisible(translated_polygon)) {
+                polygons.emplace_back(std::move(translated_polygon));
+            }
+        }
+    }
+    return polygons;
+}
+
+Vec3 GetLinePlaneIntersection(Vec3 normal, CoordType offset, Vec3 point1, Vec3 point2) {
+    Vec3 line_direction = point2 - point1;
+    CoordType t = -(glm::dot(normal, point1) + offset) / glm::dot(normal, line_direction);
+    return point1 + t * line_direction;
+}
+
+bool IsPointOnCorrectSideOfPlane(Vec3 normal, CoordType offset, const Vec3& point) {
+    assert(std::abs(glm::length(normal) - 1) <= kEps &&
+           "IsPointOnCorrectSideOfPlane: normal vector length must be 1");
+    CoordType a = glm::dot(normal, point) + offset;
+    return glm::dot(normal, point) + offset > 0;
+}
+
+std::vector<Polygon> ClipPolygon(Vec3 plane_normal, CoordType plane_offset,
+                                 const Polygon& polygon) {
+    std::vector<Index> inside_indices;
+    std::vector<Index> outside_indices;
+    for (Index i = 0; i < Polygon::kVertexCount; ++i) {
+        if (IsPointOnCorrectSideOfPlane(plane_normal, plane_offset, polygon[i])) {
+            inside_indices.push_back(i);
+        } else {
+            outside_indices.push_back(i);
+        }
+    }
+    if (inside_indices.size() == 0) {
+        return {};
+    }
+    if (inside_indices.size() == 1) {
+        if (inside_indices[0] == 1) {
+            std::swap(outside_indices[0], outside_indices[1]);
+        }
+        Vec3 intersection1 = GetLinePlaneIntersection(
+            plane_normal, plane_offset, polygon[inside_indices[0]], polygon[outside_indices[0]]);
+        Vec3 intersection2 = GetLinePlaneIntersection(
+            plane_normal, plane_offset, polygon[inside_indices[0]], polygon[outside_indices[1]]);
+        return {
+            Polygon{polygon[inside_indices[0]], intersection1, intersection2, polygon.GetColor()}};
+    }
+    if (inside_indices.size() == 2) {
+        if (outside_indices[0] == 1) {
+            std::swap(inside_indices[0], inside_indices[1]);
+        }
+        Vec3 intersection1 = GetLinePlaneIntersection(
+            plane_normal, plane_offset, polygon[outside_indices[0]], polygon[inside_indices[0]]);
+        Vec3 intersection2 = GetLinePlaneIntersection(
+            plane_normal, plane_offset, polygon[outside_indices[0]], polygon[inside_indices[1]]);
+        return {
+            Polygon{polygon[inside_indices[0]], intersection2, intersection1, polygon.GetColor()},
+            Polygon(polygon[inside_indices[0]], polygon[inside_indices[1]], intersection2,
+                    polygon.GetColor())};
+    }
+    return {polygon};
+}
+
+void NormalizePlane(Vec4& plane) {
+    plane /= glm::length(Vec3(plane));
+}
+
+std::array<Vec4, 2> GetClippingPlanes(const Mat4& projection_matrix) {
+    std::array<Vec4, 2> frustum_planes;
+    frustum_planes[0] = glm::row(projection_matrix, 3) + glm::row(projection_matrix, 2);
+    frustum_planes[1] = glm::row(projection_matrix, 3) - glm::row(projection_matrix, 2);
+    NormalizePlane(frustum_planes[0]);
+    NormalizePlane(frustum_planes[1]);
+    return frustum_planes;
+}
+
+void ClipPolygons(const Mat4& projection_matrix, std::vector<Polygon>& polygons_to_clip) {
+    auto frustum_planes = GetClippingPlanes(projection_matrix);
+    for (Index i = 0; i < frustum_planes.size(); ++i) {
+        std::vector<Polygon> clipped;
+        for (Polygon& polygon : polygons_to_clip) {
+            for (Polygon& clipped_polygon :
+                 ClipPolygon(Vec3(frustum_planes[i]), frustum_planes[i].w, polygon)) {
+                clipped.emplace_back(std::move(clipped_polygon));
+            }
+        }
+        polygons_to_clip = std::move(clipped);
     }
 }
 
@@ -179,10 +228,13 @@ void DrawPolygon(Picture& picture, const Polygon& polygon) {
 Picture Renderer::Render(const World& world, const Camera& camera, Height height, Width width) {
     CoordType aspect_ratio = GetAspectRatio(height, width);
     std::vector<Polygon> polygons = GetPolygons(world);
-    std::vector<Polygon> transformed_polygons = Project(polygons, camera, aspect_ratio);
+    Mat4 projection_matrix = glm::perspective(camera.GetFOV(), GetAspectRatio(height, width),
+                                              camera.GetNearDist(), camera.GetFarDist());
+    ClipPolygons(projection_matrix, polygons);
+    std::vector<Polygon> transformed_polygons = polygons;
     for (Index i = 0; i < transformed_polygons.size(); ++i) {
+        TransformPolygon(projection_matrix, transformed_polygons[i]);
         TransformPolygonToScreenSpace(transformed_polygons[i], height, width);
-        SortPolygonVertices(transformed_polygons[i]);
     }
     Picture picture(height, width);
     for (Index i = 0; i < transformed_polygons.size(); ++i) {

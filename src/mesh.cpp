@@ -12,7 +12,7 @@ Mesh::Mesh(const std::string& path) {
     OBJParser parser(path);
     for (const auto& face : parser.GetFaces()) {
         for (Index i = 1; i + 1 < face.size(); ++i) {
-            AddPolygon(Polygon(face[0], face[i], face[i + 1]));
+            AddPolygon(Polygon(face[0], face[i], face[i + 1], Polygon::kDefaultColor));
         }
     }
 }
