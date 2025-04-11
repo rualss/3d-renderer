@@ -33,6 +33,6 @@
 
 # Build files
 /build/
-/debug_build/
+/build_debug/
 compile_commands.json
 /.cache/

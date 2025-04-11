@@ -24,6 +24,8 @@ public:
     void ApplyMatrix(const Mat4& mat);
     Vec3& operator[](Index i);
     const Vec3& operator[](Index i) const;
+    Vec3 GetUnitNormal() const;
+    Vec3 GetNonUnitNormal() const;
 
 private:
     Color color_ = kDefaultColor;

@@ -7,6 +7,9 @@ class Light {
 public:
     Light();
     Light(const Vec3& direction, CoordType intensity);
+    const Vec3& GetDirection() const;
+    CoordType GetIntensity() const;
+    Light GetTransformed(const Mat4& mat) const;
 
 private:
     static constexpr CoordType kDefaultIntensity = 1.;

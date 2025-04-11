@@ -7,6 +7,3 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_subdirectory(src)
-
-add_executable(test test.cpp)
-target_link_libraries(test PUBLIC 3d_renderer)

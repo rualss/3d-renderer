@@ -1,4 +1,4 @@
-add_library(3d_renderer
+add_library(3d_pipeline_lib
     camera.cpp
     picture.cpp
     renderer.cpp
@@ -6,4 +6,5 @@ add_library(3d_renderer
     world.cpp
     mesh.cpp
     obj_parser.cpp
+    light.cpp
 )

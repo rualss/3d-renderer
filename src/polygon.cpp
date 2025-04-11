@@ -59,4 +59,12 @@ const Vec3& Polygon::operator[](Index i) const {
     return vertices_[i];
 }
 
+Vec3 Polygon::GetUnitNormal() const {
+    return glm::normalize(GetNonUnitNormal());
+}
+
+Vec3 Polygon::GetNonUnitNormal() const {
+    return glm::cross(vertices_[2] - vertices_[0], vertices_[1] - vertices_[0]);
+}
+
 }  // namespace renderer

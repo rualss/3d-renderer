@@ -1,37 +1,27 @@
 #include "renderer.h"
 #include <algorithm>
-#include <array>
 #include <cassert>
 #include <cmath>
-#include <glm/ext/matrix_transform.hpp>
-#include <glm/geometric.hpp>
-#include <glm/gtc/matrix_access.hpp>
-#include <glm/trigonometric.hpp>
-#include <iostream>
-#include <utility>
-#include <vector>
+#include <glm/ext.hpp>
+#include <glm/matrix.hpp>
+#include "light.h"
 #include "linalg.h"
-#include "picture.h"
 #include "polygon.h"
-#include "world.h"
-#include "camera.h"
-
-#include "glm/ext.hpp"
 
 namespace renderer {
 
 namespace {
 
-void TransformVector(const Mat4& transformation_matrix, Vec3& vector) {
+void ProjectiveTransformVector(const Mat4& transformation_matrix, Vec3& vector) {
     Vec4 homogeneous(vector, 1.0);
     homogeneous = transformation_matrix * homogeneous;
     assert(std::abs(homogeneous.w) > kEps && "TransformVector: Point went to infinity");
     vector = Vec3(homogeneous / homogeneous.w);
 }
 
-void TransformPolygon(const Mat4& transformation_matrix, Polygon& polygon) {
+void ProjectiveTransformPolygon(const Mat4& transformation_matrix, Polygon& polygon) {
     for (size_t i = 0; i < Polygon::kVertexCount; ++i) {
-        TransformVector(transformation_matrix, polygon[i]);
+        ProjectiveTransformVector(transformation_matrix, polygon[i]);
     }
 }
 
@@ -56,7 +46,7 @@ void UpdatePicture(Picture& picture, Index i, Index j, CoordType z, Color color)
     }
 }
 
-Vec3 Barycentric(Vec2 p, Polygon polygon) {
+Vec3 GetBarycentric(Vec2 p, Polygon polygon) {
     Vec2 a = Vec2(polygon[0]);
     Vec2 b = Vec2(polygon[1]);
     Vec2 c = Vec2(polygon[2]);
@@ -71,7 +61,7 @@ Vec3 Barycentric(Vec2 p, Polygon polygon) {
     return barycentric;
 }
 
-bool IsInsidePolygon(const Vec3 barycentric_coordinates) {
+bool IsInsidePolygon(const Vec3& barycentric_coordinates) {
     return barycentric_coordinates.x <= 1.0 && barycentric_coordinates.x >= 0.0 &&
            barycentric_coordinates.y <= 1.0 && barycentric_coordinates.y >= 0.0 &&
            barycentric_coordinates.z <= 1.0 && barycentric_coordinates.z >= 0.0;
@@ -85,7 +75,7 @@ Index RoundUp(CoordType coordinate) {
     return static_cast<size_t>(std::ceil(coordinate));
 }
 
-CoordType CalculateZ(const Vec3 barycentric, const Polygon& polygon) {
+CoordType CalculateZ(const Vec3& barycentric, const Polygon& polygon) {
     return barycentric[0] * polygon[0].z + barycentric[1] * polygon[1].z +
            barycentric[2] * polygon[2].z;
 }
@@ -95,7 +85,7 @@ void DrawPolygon(Picture& picture, const Polygon& polygon) {
     Index min_y = picture.GetWidth() + picture.GetHeight() + 1;
     Index max_x = -1;
     Index max_y = -1;
-    Vec3 bebra = Barycentric(polygon[0] * 0.3 + polygon[1] * 0.3 + polygon[2] * 0.4, polygon);
+    Vec3 bebra = GetBarycentric(polygon[0] * 0.3 + polygon[1] * 0.3 + polygon[2] * 0.4, polygon);
     for (int i = 0; i < Polygon::kVertexCount; ++i) {
         min_x = std::min(RoundDown(polygon[i].x), min_x);
         min_y = std::min(RoundDown(polygon[i].y), min_y);
@@ -113,8 +103,8 @@ void DrawPolygon(Picture& picture, const Polygon& polygon) {
         for (Index y = min_y; y <= max_y; ++y) {
             Vec2 point_to_check = {static_cast<CoordType>(x) + 0.5,
                                    static_cast<CoordType>(y) + 0.5};
-            Vec3 barycentric = Barycentric(point_to_check, polygon);
-            if (IsInsidePolygon(Barycentric(point_to_check, polygon))) {
+            Vec3 barycentric = GetBarycentric(point_to_check, polygon);
+            if (IsInsidePolygon(GetBarycentric(point_to_check, polygon))) {
                 UpdatePicture(picture, y, x, CalculateZ(barycentric, polygon), polygon.GetColor());
             }
         }
@@ -123,17 +113,17 @@ void DrawPolygon(Picture& picture, const Polygon& polygon) {
 
 bool IsVisible(const Polygon& polygon) {
     Vec3 look_dir = polygon[0];
-    return glm::dot(look_dir, glm::normalize(glm::cross(polygon[1] - polygon[0],
-                                                        polygon[2] - polygon[0]))) < 0;
+    return glm::dot(look_dir, polygon.GetNonUnitNormal()) > 0;
 }
 
-std::vector<Polygon> GetPolygons(const World& world) {
+std::vector<Polygon> GetPolygons(const World& world, const Camera& camera) {
     std::vector<Polygon> polygons;
     for (const Mesh& mesh : world.GetMeshes()) {
-        Mat4 translate_to_world_origin = glm::translate(Mat4(1.), mesh.GetLocalOrigin());
+        Mat4 transform_to_camera =
+            camera.GetWorldToCameraMatrix() * glm::translate(Mat4(1.), mesh.GetLocalOrigin());
         for (const Polygon& polygon : mesh.GetPolygons()) {
             Polygon translated_polygon(polygon);
-            translated_polygon.ApplyMatrix(translate_to_world_origin);
+            translated_polygon.ApplyMatrix(transform_to_camera);
             if (IsVisible(translated_polygon)) {
                 polygons.emplace_back(std::move(translated_polygon));
             }
@@ -223,18 +213,48 @@ void ClipPolygons(const Mat4& projection_matrix, std::vector<Polygon>& polygons_
     }
 }
 
+Color MultiplyColor(Color color, CoordType multiplier) {
+    assert(0 <= multiplier && multiplier <= 1 && "MultiplyColor: multiplier must be in [0, 1]");
+    Vec3 tmp(color);
+    tmp *= multiplier;
+    for (Index i = 0; i < 3; ++i) {
+        tmp[i] = std::round(tmp[i]);
+    }
+    color = Color(tmp);
+    for (Index i = 0; i < 3; ++i) {
+        color[i] = std::clamp(color[i], 0, kColorMax);
+    }
+    return color;
+}
+
+void CalculateLightColor(const Light& light, Polygon& polygon) {
+    CoordType intensity_on_polygon =
+        glm::dot(light.GetDirection(), polygon.GetUnitNormal()) * light.GetIntensity();
+    intensity_on_polygon = std::clamp(intensity_on_polygon, 0., 1.);
+    intensity_on_polygon += 0.1;
+    intensity_on_polygon = std::clamp(intensity_on_polygon, 0., 1.);
+    polygon.SetColor(MultiplyColor(polygon.GetColor(), intensity_on_polygon));
+}
+
+Light GetRotatedLight(const Light& light, const Camera& camera) {
+    return light.GetTransformed(glm::transpose(camera.GetRotationMatrix()));
+}
+
 }  // namespace
 
-Picture Renderer::Render(const World& world, const Camera& camera, Height height, Width width) {
+Picture Renderer::Render(const World& world, const Camera& camera, const Light& light,
+                         Height height, Width width) {
     CoordType aspect_ratio = GetAspectRatio(height, width);
-    std::vector<Polygon> polygons = GetPolygons(world);
+    std::vector<Polygon> polygons = GetPolygons(world, camera);
     Mat4 projection_matrix = glm::perspective(camera.GetFOV(), GetAspectRatio(height, width),
                                               camera.GetNearDist(), camera.GetFarDist());
     ClipPolygons(projection_matrix, polygons);
     std::vector<Polygon> transformed_polygons = polygons;
-    for (Index i = 0; i < transformed_polygons.size(); ++i) {
-        TransformPolygon(projection_matrix, transformed_polygons[i]);
-        TransformPolygonToScreenSpace(transformed_polygons[i], height, width);
+    Light rotated_light = GetRotatedLight(light, camera);
+    for (Polygon& transformed_polygon : transformed_polygons) {
+        CalculateLightColor(rotated_light, transformed_polygon);
+        ProjectiveTransformPolygon(projection_matrix, transformed_polygon);
+        TransformPolygonToScreenSpace(transformed_polygon, height, width);
     }
     Picture picture(height, width);
     for (Index i = 0; i < transformed_polygons.size(); ++i) {
