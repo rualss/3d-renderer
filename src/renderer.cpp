@@ -7,6 +7,7 @@
 #include "light.h"
 #include "linalg.h"
 #include "polygon.h"
+#include "geometry.h"
 
 namespace renderer {
 
@@ -46,20 +47,20 @@ void UpdatePicture(Picture& picture, Index i, Index j, CoordType z, Color color)
     }
 }
 
-Vec3 GetBarycentric(Vec2 p, Polygon polygon) {
-    Vec2 a = Vec2(polygon[0]);
-    Vec2 b = Vec2(polygon[1]);
-    Vec2 c = Vec2(polygon[2]);
-    Vec2 v0 = b - a;
-    Vec2 v1 = c - a;
-    Vec2 v2 = p - a;
-    CoordType inv_denominator = 1. / (v0.x * v1.y - v1.x * v0.y);
-    Vec3 barycentric;
-    barycentric[1] = (v2.x * v1.y - v1.x * v2.y) * inv_denominator;
-    barycentric[2] = (v0.x * v2.y - v2.x * v0.y) * inv_denominator;
-    barycentric[0] = 1.0 - barycentric[1] - barycentric[2];
-    return barycentric;
-}
+// Vec3 GetBarycentric(Vec2 p, Polygon polygon) {
+//     Vec2 a = Vec2(polygon[0]);
+//     Vec2 b = Vec2(polygon[1]);
+//     Vec2 c = Vec2(polygon[2]);
+//     Vec2 v0 = b - a;
+//     Vec2 v1 = c - a;
+//     Vec2 v2 = p - a;
+//     CoordType inv_denominator = 1. / (v0.x * v1.y - v1.x * v0.y);
+//     Vec3 barycentric;
+//     barycentric[1] = (v2.x * v1.y - v1.x * v2.y) * inv_denominator;
+//     barycentric[2] = (v0.x * v2.y - v2.x * v0.y) * inv_denominator;
+//     barycentric[0] = 1.0 - barycentric[1] - barycentric[2];
+//     return barycentric;
+// }
 
 bool IsInsidePolygon(const Vec3& barycentric_coordinates) {
     return barycentric_coordinates.x <= 1.0 && barycentric_coordinates.x >= 0.0 &&
@@ -85,7 +86,6 @@ void DrawPolygon(Picture& picture, const Polygon& polygon) {
     Index min_y = picture.GetWidth() + picture.GetHeight() + 1;
     Index max_x = -1;
     Index max_y = -1;
-    Vec3 bebra = GetBarycentric(polygon[0] * 0.3 + polygon[1] * 0.3 + polygon[2] * 0.4, polygon);
     for (int i = 0; i < Polygon::kVertexCount; ++i) {
         min_x = std::min(RoundDown(polygon[i].x), min_x);
         min_y = std::min(RoundDown(polygon[i].y), min_y);
@@ -98,13 +98,13 @@ void DrawPolygon(Picture& picture, const Polygon& polygon) {
     min_y = std::max(0, min_y);
     max_x = std::min((picture.GetWidth() - 1), max_x);
     max_y = std::min((picture.GetHeight() - 1), max_y);
-
+    BarycentricCoordinateSystem barycentric_system(polygon);
     for (Index x = min_x; x <= max_x; ++x) {
         for (Index y = min_y; y <= max_y; ++y) {
             Vec2 point_to_check = {static_cast<CoordType>(x) + 0.5,
                                    static_cast<CoordType>(y) + 0.5};
-            Vec3 barycentric = GetBarycentric(point_to_check, polygon);
-            if (IsInsidePolygon(GetBarycentric(point_to_check, polygon))) {
+            Vec3 barycentric = barycentric_system.GetBarycentricCoordinates(point_to_check);
+            if (IsInsidePolygon(barycentric)) {
                 UpdatePicture(picture, y, x, CalculateZ(barycentric, polygon), polygon.GetColor());
             }
         }
@@ -242,8 +242,13 @@ Light GetRotatedLight(const Light& light, const Camera& camera) {
 
 }  // namespace
 
-Picture Renderer::Render(const World& world, const Camera& camera, const Light& light,
-                         Height height, Width width) {
+void Renderer::Render(const World& world, const Camera& camera, const Light& light,
+                      Picture&& picture) {
+    Height height{picture.GetHeight()};
+    Width width{picture.GetWidth()};
+    assert(height > 0 && "Height must be positive");
+    assert(width > 0 && "Width must be positive");
+    picture.Reset();
     CoordType aspect_ratio = GetAspectRatio(height, width);
     std::vector<Polygon> polygons = GetPolygons(world, camera);
     Mat4 projection_matrix = glm::perspective(camera.GetFOV(), GetAspectRatio(height, width),
@@ -256,11 +261,9 @@ Picture Renderer::Render(const World& world, const Camera& camera, const Light& 
         ProjectiveTransformPolygon(projection_matrix, transformed_polygon);
         TransformPolygonToScreenSpace(transformed_polygon, height, width);
     }
-    Picture picture(height, width);
     for (Index i = 0; i < transformed_polygons.size(); ++i) {
         DrawPolygon(picture, transformed_polygons[i]);
     }
-    return picture;
 }
 
 }  // namespace renderer

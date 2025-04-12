@@ -15,6 +15,7 @@ public:
     CoordType GetZBufferValue(Index x, Index y) const;
     Index GetHeight() const;
     Index GetWidth() const;
+    void Reset();
 
 private:
     Index height_;

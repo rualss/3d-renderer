@@ -5,6 +5,7 @@
 #include "camera.h"
 #include "light.h"
 #include "linalg.h"
+#include "picture.h"
 #include "renderer.h"
 #include "world.h"
 #include "timer.h"
@@ -37,8 +38,10 @@ private:
     renderer::Camera camera_;
     renderer::World world_;
     renderer::Light light_;
+    renderer::Picture picture_;
     renderer::CoordType movement_speed_ = kDefaultMovementSpeed;
     renderer::CoordType rotation_speed_ = kDefaultRotationSpeed;
+    std::vector<sf::Vertex> pixels_;
     Timer timer_;
 };
 

@@ -7,4 +7,5 @@ add_library(3d_pipeline_lib
     mesh.cpp
     obj_parser.cpp
     light.cpp
+    geometry.cpp
 )

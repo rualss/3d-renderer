@@ -1,6 +1,8 @@
 #include "picture.h"
-#include <cassert>
 #include "linalg.h"
+#include <cassert>
+#include <execution>
+#include <algorithm>
 
 namespace renderer {
 
@@ -11,6 +13,11 @@ Picture::Picture(Height height, Width width) {
     width_ = static_cast<Index>(width);
     pixels_.resize(width_ * height_, kBlack);
     z_buffer_.resize(width_ * height_, 2);
+}
+
+void Picture::Reset() {
+    std::fill(std::execution::par, pixels_.begin(), pixels_.end(), kBlack);
+    std::fill(std::execution::par, z_buffer_.begin(), z_buffer_.end(), 2);
 }
 
 void Picture::SetPixel(Index x, Index y, const Color& color) {
