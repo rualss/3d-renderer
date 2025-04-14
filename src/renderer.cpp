@@ -2,10 +2,12 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <execution>
 #include <glm/ext.hpp>
 #include <glm/matrix.hpp>
 #include "light.h"
 #include "linalg.h"
+#include "picture.h"
 #include "polygon.h"
 #include "geometry.h"
 
@@ -40,28 +42,6 @@ void TransformPolygonToScreenSpace(Polygon& polygon, Height height, Width width)
     }
 }
 
-void UpdatePicture(Picture& picture, Index i, Index j, CoordType z, Color color) {
-    if (picture.GetZBufferValue(j, i) > z) {
-        picture.SetZBufferValue(j, i, z);
-        picture.SetPixel(j, i, color);
-    }
-}
-
-// Vec3 GetBarycentric(Vec2 p, Polygon polygon) {
-//     Vec2 a = Vec2(polygon[0]);
-//     Vec2 b = Vec2(polygon[1]);
-//     Vec2 c = Vec2(polygon[2]);
-//     Vec2 v0 = b - a;
-//     Vec2 v1 = c - a;
-//     Vec2 v2 = p - a;
-//     CoordType inv_denominator = 1. / (v0.x * v1.y - v1.x * v0.y);
-//     Vec3 barycentric;
-//     barycentric[1] = (v2.x * v1.y - v1.x * v2.y) * inv_denominator;
-//     barycentric[2] = (v0.x * v2.y - v2.x * v0.y) * inv_denominator;
-//     barycentric[0] = 1.0 - barycentric[1] - barycentric[2];
-//     return barycentric;
-// }
-
 bool IsInsidePolygon(const Vec3& barycentric_coordinates) {
     return barycentric_coordinates.x <= 1.0 && barycentric_coordinates.x >= 0.0 &&
            barycentric_coordinates.y <= 1.0 && barycentric_coordinates.y >= 0.0 &&
@@ -79,36 +59,6 @@ Index RoundUp(CoordType coordinate) {
 CoordType CalculateZ(const Vec3& barycentric, const Polygon& polygon) {
     return barycentric[0] * polygon[0].z + barycentric[1] * polygon[1].z +
            barycentric[2] * polygon[2].z;
-}
-
-void DrawPolygon(Picture& picture, const Polygon& polygon) {
-    Index min_x = picture.GetWidth() + picture.GetHeight() + 1;
-    Index min_y = picture.GetWidth() + picture.GetHeight() + 1;
-    Index max_x = -1;
-    Index max_y = -1;
-    for (int i = 0; i < Polygon::kVertexCount; ++i) {
-        min_x = std::min(RoundDown(polygon[i].x), min_x);
-        min_y = std::min(RoundDown(polygon[i].y), min_y);
-        max_x = std::max(RoundUp(polygon[i].x), max_x);
-        max_y = std::max(RoundUp(polygon[i].y), max_y);
-    }
-    // assert("bounded dimensions are not OK" && max_x < 2 * screen->GetWidth() &&
-    //        max_y < 2 * screen->GetHeight());
-    min_x = std::max(0, min_x);
-    min_y = std::max(0, min_y);
-    max_x = std::min((picture.GetWidth() - 1), max_x);
-    max_y = std::min((picture.GetHeight() - 1), max_y);
-    BarycentricCoordinateSystem barycentric_system(polygon);
-    for (Index x = min_x; x <= max_x; ++x) {
-        for (Index y = min_y; y <= max_y; ++y) {
-            Vec2 point_to_check = {static_cast<CoordType>(x) + 0.5,
-                                   static_cast<CoordType>(y) + 0.5};
-            Vec3 barycentric = barycentric_system.GetBarycentricCoordinates(point_to_check);
-            if (IsInsidePolygon(barycentric)) {
-                UpdatePicture(picture, y, x, CalculateZ(barycentric, polygon), polygon.GetColor());
-            }
-        }
-    }
 }
 
 bool IsVisible(const Polygon& polygon) {
@@ -244,11 +194,12 @@ Light GetRotatedLight(const Light& light, const Camera& camera) {
 
 void Renderer::Render(const World& world, const Camera& camera, const Light& light,
                       Picture&& picture) {
-    Height height{picture.GetHeight()};
-    Width width{picture.GetWidth()};
+    Height height = Height{picture.GetHeight()};
+    Width width = Width{picture.GetWidth()};
     assert(height > 0 && "Height must be positive");
     assert(width > 0 && "Width must be positive");
     picture.Reset();
+    ResetZBuffer(picture);
     CoordType aspect_ratio = GetAspectRatio(height, width);
     std::vector<Polygon> polygons = GetPolygons(world, camera);
     Mat4 projection_matrix = glm::perspective(camera.GetFOV(), GetAspectRatio(height, width),
@@ -264,6 +215,50 @@ void Renderer::Render(const World& world, const Camera& camera, const Light& lig
     for (Index i = 0; i < transformed_polygons.size(); ++i) {
         DrawPolygon(picture, transformed_polygons[i]);
     }
+}
+
+void Renderer::DrawPolygon(Picture& picture, const Polygon& polygon) {
+    Index min_x = picture.GetWidth() + picture.GetHeight() + 1;
+    Index min_y = picture.GetWidth() + picture.GetHeight() + 1;
+    Index max_x = -1;
+    Index max_y = -1;
+    for (int i = 0; i < Polygon::kVertexCount; ++i) {
+        min_x = std::min(RoundDown(polygon[i].x), min_x);
+        min_y = std::min(RoundDown(polygon[i].y), min_y);
+        max_x = std::max(RoundUp(polygon[i].x), max_x);
+        max_y = std::max(RoundUp(polygon[i].y), max_y);
+    }
+    // assert("bounded dimensions are not OK" && max_x < 2 * screen->GetWidth() &&
+    //        max_y < 2 * screen->GetHeight());
+    min_x = std::max(0, min_x);
+    min_y = std::max(0, min_y);
+    max_x = std::min((picture.GetWidth() - 1), max_x);
+    max_y = std::min((picture.GetHeight() - 1), max_y);
+    BarycentricCoordinateSystem barycentric_system(polygon);
+    for (Index x = min_x; x <= max_x; ++x) {
+        for (Index y = min_y; y <= max_y; ++y) {
+            Vec2 point_to_check = {static_cast<CoordType>(x) + 0.5,
+                                   static_cast<CoordType>(y) + 0.5};
+            Vec3 barycentric = barycentric_system.GetBarycentricCoordinates(point_to_check);
+            if (!IsInsidePolygon(barycentric)) {
+                continue;
+            }
+            CoordType current_z = CalculateZ(barycentric, polygon);
+            Index pixel_index = y * picture.GetWidth() + x;
+            if (z_buffer_[pixel_index] <= current_z) {
+                continue;
+            }
+            z_buffer_[pixel_index] = current_z;
+            picture(x, y) = polygon.GetColor();
+        }
+    }
+}
+
+void Renderer::ResetZBuffer(const Picture& picture) {
+    if (z_buffer_.size() < picture.GetPixels().size()) {
+        z_buffer_.resize(picture.GetPixels().size());
+    }
+    std::fill(std::execution::par, z_buffer_.begin(), z_buffer_.end(), 2.);
 }
 
 }  // namespace renderer

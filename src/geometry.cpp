@@ -1,5 +1,4 @@
 #include "geometry.h"
-#include <iostream>
 #include "linalg.h"
 
 namespace renderer {

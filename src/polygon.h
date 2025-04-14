@@ -2,6 +2,7 @@
 
 #include "linalg.h"
 #include <array>
+#include <optional>
 
 namespace renderer {
 
@@ -30,6 +31,8 @@ public:
 private:
     Color color_ = kDefaultColor;
     std::array<Vec3, kVertexCount> vertices_;
+    std::array<Vec3, kVertexCount> normals_;
+    std::optional<std::array<Vec3, kVertexCount>> texture_vertices_ = std::nullopt;
 };
 
 }  // namespace renderer

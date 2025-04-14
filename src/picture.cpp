@@ -6,30 +6,32 @@
 
 namespace renderer {
 
-Picture::Picture(Height height, Width width) {
-    assert(static_cast<Index>(height) > 0 && "Height less or equal to 0");
-    assert(static_cast<Index>(width) > 0 && "Width less or equal to 0");
-    height_ = static_cast<Index>(height);
-    width_ = static_cast<Index>(width);
+Picture::Picture(Height height, Width width)
+    : height_(static_cast<Index>(height)), width_(static_cast<Index>(width)) {
+    assert(height_ > 0 && "Height must be positive");
+    assert(width_ > 0 && "Width must be positive");
     pixels_.resize(width_ * height_, kBlack);
-    z_buffer_.resize(width_ * height_, 2);
 }
 
-void Picture::Reset() {
-    std::fill(std::execution::par, pixels_.begin(), pixels_.end(), kBlack);
-    std::fill(std::execution::par, z_buffer_.begin(), z_buffer_.end(), 2);
+Picture::Picture(Height height, Width width, unsigned char* data)
+    : height_(static_cast<Index>(height)), width_(static_cast<Index>(width)) {
+    assert(height_ > 0 && "Height must be positive");
+    assert(width_ > 0 && "Width must be positive");
+    for (Index y = 0; y < height_; ++y) {
+        for (Index x = 0; x < width_; ++x) {
+            Index index = (y * width_ + x) * 3;
+            pixels_.emplace_back(data[index], data[index + 1], data[index + 2]);
+        }
+    }
 }
 
-void Picture::SetPixel(Index x, Index y, const Color& color) {
+Color& Picture::operator()(Index x, Index y) {
     assert(x >= 0 && x < width_ && "x coordinates out of bounds");
     assert(y >= 0 && y < height_ && "y coordinates out of bounds");
-    assert(color[0] >= 0 && color[0] <= 255 && color[0] >= 0 && color[0] <= 255 && color[0] >= 0 &&
-           color[0] <= 255 && "Color value out of bounds");
-
-    pixels_[width_ * y + x] = color;
+    return pixels_[width_ * y + x];
 }
 
-const Color& Picture::GetPixel(Index x, Index y) const {
+const Color& Picture::operator()(Index x, Index y) const {
     assert(x >= 0 && x < width_ && "x coordinates out of bounds");
     assert(y >= 0 && y < height_ && "y coordinates out of bounds");
     return pixels_[width_ * y + x];
@@ -38,16 +40,6 @@ const Color& Picture::GetPixel(Index x, Index y) const {
 const std::vector<Color>& Picture::GetPixels() const {
     return pixels_;
 }
-void Picture::SetZBufferValue(Index x, Index y, CoordType z) {
-    assert(x >= 0 && x < width_ && "x coordinates out of bounds");
-    assert(y >= 0 && y < height_ && "y coordinates out of bounds");
-    z_buffer_[width_ * y + x] = z;
-}
-CoordType Picture::GetZBufferValue(Index x, Index y) const {
-    assert(x >= 0 && x < width_ && "x coordinates out of bounds");
-    assert(y >= 0 && y < height_ && "y coordinates out of bounds");
-    return z_buffer_[width_ * y + x];
-}
 
 Index Picture::GetHeight() const {
     return height_;
@@ -55,6 +47,10 @@ Index Picture::GetHeight() const {
 
 Index Picture::GetWidth() const {
     return width_;
+}
+
+void Picture::Reset() {
+    std::fill(std::execution::par, pixels_.begin(), pixels_.end(), kBlack);
 }
 
 }  // namespace renderer

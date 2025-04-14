@@ -7,7 +7,6 @@
 #include "world.h"
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/trigonometric.hpp>
-#include <iostream>
 
 namespace application {
 

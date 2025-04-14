@@ -24,7 +24,7 @@ public:
 private:
     static constexpr Vec3 kDefaultFocalPoint = {0, 0, 0};
     static constexpr CoordType kDefaultNearDist = 0.1;
-    static constexpr CoordType kDefaultFarDist = 1000.0;
+    static constexpr CoordType kDefaultFarDist = 200.0;
     static constexpr CoordType kDefaultFOV = 45.0;
     static constexpr Vec3 kDefaultPosition = Vec3{0, 0, 0};
     static constexpr Mat3 kDefaultRotation = Mat4{1.};
