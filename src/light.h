@@ -1,21 +1,27 @@
 #pragma once
 
+#include <variant>
 #include "linalg.h"
 
 namespace renderer {
-class Light {
-public:
-    Light();
-    Light(const Vec3& direction, CoordType intensity);
-    const Vec3& GetDirection() const;
-    CoordType GetIntensity() const;
-    Light GetTransformed(const Mat4& mat) const;
 
-private:
-    static constexpr CoordType kDefaultIntensity = 1.;
-    static constexpr Vec3 kDefaultDirection = {0, 0, -1};
-
-    CoordType intensity_ = kDefaultIntensity;
-    Vec3 direction_ = kDefaultDirection;
+struct AmbientLight {
+    Color color = color::kWhite;
 };
+
+struct DirectionalLight {
+    Color color = color::kWhite;
+    Vec3 direction = {0, 0, -1};
+};
+
+struct PointLight {
+    Color color = color::kWhite;
+    CoordType constant = 1;
+    CoordType linear = 0.22;
+    CoordType quadratic = 0.20;
+    Vec3 position = {0, 0, 0};
+};
+
+using Light = std::variant<AmbientLight, DirectionalLight, PointLight>;
+
 }  // namespace renderer

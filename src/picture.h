@@ -8,11 +8,11 @@ namespace renderer {
 class Picture {
 public:
     Picture(Height height, Width width);
-    Picture(Height height, Width width, unsigned char* data);
+    Picture(Height height, Width width, const unsigned char* data);
 
-    Color& operator()(Index x, Index y);
-    const Color& operator()(Index x, Index y) const;
-    const std::vector<Color>& GetPixels() const;
+    DiscreteColor& operator()(Index x, Index y);
+    const DiscreteColor& operator()(Index x, Index y) const;
+    const std::vector<DiscreteColor>& GetPixels() const;
     Index GetHeight() const;
     Index GetWidth() const;
     void Reset();
@@ -20,7 +20,7 @@ public:
 private:
     Index height_;
     Index width_;
-    std::vector<Color> pixels_;  // X axis directed right Y axis directed downwards
+    std::vector<DiscreteColor> pixels_;  // X axis directed right Y axis directed downwards
 };
 
 }  // namespace renderer

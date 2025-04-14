@@ -1,6 +1,7 @@
 #pragma once
 
-#include "mesh.h"
+#include "light.h"
+#include "object_3d.h"
 
 #include <vector>
 
@@ -9,14 +10,16 @@ namespace renderer {
 class World {
 public:
     World();
-    World(const std::vector<Mesh>& meshes);
+    World(std::vector<Object3D>&& objects);
+    World(const std::vector<Object3D>& objects);
 
-    const std::vector<Mesh>& GetMeshes() const;
-    void AddMesh(const Mesh& mesh);
-    void AddMesh(Mesh&& mesh);
+    const std::vector<Object3D>& GetObjects() const;
+    void AddObject(const Object3D& object);
+    void AddObject(Object3D&& object);
 
 private:
-    std::vector<Mesh> meshes_;
+    std::vector<Object3D> objects_;
+    std::vector<Light> light_;
 };
 
 }  // namespace renderer

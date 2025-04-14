@@ -3,19 +3,22 @@
 namespace renderer {
 
 World::World() = default;
-World::World(const std::vector<Mesh>& meshes) : meshes_(meshes) {
+World::World(std::vector<Object3D>&& objects) : objects_(std::move(objects)) {
 }
 
-const std::vector<Mesh>& World::GetMeshes() const {
-    return meshes_;
+World::World(const std::vector<Object3D>& objects) : objects_(objects) {
 }
 
-void World::AddMesh(const Mesh& mesh) {
-    meshes_.push_back(mesh);
+const std::vector<Object3D>& World::GetObjects() const {
+    return objects_;
 }
 
-void World::AddMesh(Mesh&& mesh) {
-    meshes_.emplace_back(std::move(mesh));
+void World::AddObject(const Object3D& object) {
+    objects_.push_back(object);
+}
+
+void World::AddObject(Object3D&& object) {
+    objects_.emplace_back(std::move(object));
 }
 
 }  // namespace renderer

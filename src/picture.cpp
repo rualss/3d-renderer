@@ -10,10 +10,10 @@ Picture::Picture(Height height, Width width)
     : height_(static_cast<Index>(height)), width_(static_cast<Index>(width)) {
     assert(height_ > 0 && "Height must be positive");
     assert(width_ > 0 && "Width must be positive");
-    pixels_.resize(width_ * height_, kBlack);
+    pixels_.resize(width_ * height_, color::kBlack);
 }
 
-Picture::Picture(Height height, Width width, unsigned char* data)
+Picture::Picture(Height height, Width width, const unsigned char* data)
     : height_(static_cast<Index>(height)), width_(static_cast<Index>(width)) {
     assert(height_ > 0 && "Height must be positive");
     assert(width_ > 0 && "Width must be positive");
@@ -25,19 +25,19 @@ Picture::Picture(Height height, Width width, unsigned char* data)
     }
 }
 
-Color& Picture::operator()(Index x, Index y) {
+DiscreteColor& Picture::operator()(Index x, Index y) {
     assert(x >= 0 && x < width_ && "x coordinates out of bounds");
     assert(y >= 0 && y < height_ && "y coordinates out of bounds");
     return pixels_[width_ * y + x];
 }
 
-const Color& Picture::operator()(Index x, Index y) const {
+const DiscreteColor& Picture::operator()(Index x, Index y) const {
     assert(x >= 0 && x < width_ && "x coordinates out of bounds");
     assert(y >= 0 && y < height_ && "y coordinates out of bounds");
     return pixels_[width_ * y + x];
 }
 
-const std::vector<Color>& Picture::GetPixels() const {
+const std::vector<DiscreteColor>& Picture::GetPixels() const {
     return pixels_;
 }
 
@@ -50,7 +50,7 @@ Index Picture::GetWidth() const {
 }
 
 void Picture::Reset() {
-    std::fill(std::execution::par, pixels_.begin(), pixels_.end(), kBlack);
+    std::fill(std::execution::par, pixels_.begin(), pixels_.end(), color::kBlack);
 }
 
 }  // namespace renderer

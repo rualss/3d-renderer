@@ -3,68 +3,29 @@
 
 namespace renderer {
 
-Polygon::Polygon(const Vec3& v1, const Vec3& v2, const Vec3& v3, Color color)
-    : vertices_({v1, v2, v3}), color_(color) {
-}
-
-Polygon::Polygon(const std::array<Vec3, kVertexCount>& vertices, Color color)
-    : vertices_(vertices), color_(color) {
-}
-
-Polygon::Polygon(const Polygon& other) : color_(other.color_), vertices_(other.vertices_) {
-}
-
-Polygon::Polygon(Polygon&& other)
-    : color_(std::move(other.color_)), vertices_(std::move(other.vertices_)) {
-}
-
-Polygon& Polygon::operator=(const Polygon& other) {
-    Polygon tmp(other);
-    Swap(tmp);
-    return *this;
-}
-
-Polygon& Polygon::operator=(Polygon&& other) {
-    Swap(other);
-    return *this;
-}
-
-Polygon::~Polygon() = default;
-
-void Polygon::Swap(Polygon& other) {
-    std::swap(color_, other.color_);
-    vertices_.swap(other.vertices_);
-}
-
-void Polygon::SetColor(const Color& color) {
-    color_ = color;
-}
-
-Color Polygon::GetColor() const {
-    return color_;
-}
-
-void Polygon::ApplyMatrix(const Mat4& mat) {
-    for (int i = 0; i < kVertexCount; ++i) {
-        Vec4 tmp(vertices_[i], 1.);
-        vertices_[i] = Vec3(mat * tmp);
+void TransformPolygon(const Mat4& mat, Polygon& polygon) {
+    for (int i = 0; i < Polygon::kVertexCount; ++i) {
+        Vec4 tmp(polygon.vertices[i], 1.);
+        polygon.vertices[i] = Vec3(mat * tmp);
     }
 }
 
-Vec3& Polygon::operator[](Index i) {
-    return vertices_[i];
+Vec3 GetNonUnitNormal(const Polygon& polygon) {
+    return glm::cross(polygon.vertices[2] - polygon.vertices[0],
+                      polygon.vertices[1] - polygon.vertices[0]);
 }
 
-const Vec3& Polygon::operator[](Index i) const {
-    return vertices_[i];
+void ProjectiveTransformVector(const Mat4& transformation_matrix, Vec3& vector) {
+    Vec4 homogeneous(vector, 1.0);
+    homogeneous = transformation_matrix * homogeneous;
+    assert(std::abs(homogeneous.w) > kEps && "TransformVector: Point went to infinity");
+    vector = Vec3(homogeneous / homogeneous.w);
 }
 
-Vec3 Polygon::GetUnitNormal() const {
-    return glm::normalize(GetNonUnitNormal());
-}
-
-Vec3 Polygon::GetNonUnitNormal() const {
-    return glm::cross(vertices_[2] - vertices_[0], vertices_[1] - vertices_[0]);
+void ProjectiveTransformPolygon(const Mat4& transformation_matrix, Polygon& polygon) {
+    for (size_t i = 0; i < Polygon::kVertexCount; ++i) {
+        ProjectiveTransformVector(transformation_matrix, polygon.vertices[i]);
+    }
 }
 
 }  // namespace renderer

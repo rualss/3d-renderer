@@ -4,9 +4,9 @@
 namespace renderer {
 
 BarycentricCoordinateSystem::BarycentricCoordinateSystem(const Polygon& polygon)
-    : a_(polygon[0]),
-      v0_(polygon[1] - polygon[0]),
-      v1_(polygon[2] - polygon[0]),
+    : a_(polygon.vertices[0]),
+      v0_(polygon.vertices[1] - polygon.vertices[0]),
+      v1_(polygon.vertices[2] - polygon.vertices[0]),
       inv_denominator_(1. / (v0_.x * v1_.y - v1_.x * v0_.y)) {
 }
 

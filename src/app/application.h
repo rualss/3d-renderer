@@ -3,7 +3,6 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 #include "camera.h"
-#include "light.h"
 #include "linalg.h"
 #include "picture.h"
 #include "renderer.h"
@@ -37,7 +36,6 @@ private:
     renderer::Renderer renderer_;
     renderer::Camera camera_;
     renderer::World world_;
-    renderer::Light light_;
     renderer::Picture picture_;
     renderer::CoordType movement_speed_ = kDefaultMovementSpeed;
     renderer::CoordType rotation_speed_ = kDefaultRotationSpeed;

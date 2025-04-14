@@ -6,33 +6,18 @@
 
 namespace renderer {
 
-class Polygon {
+struct Polygon {
 public:
     static constexpr Index kVertexCount = 3;
-    static constexpr Color kDefaultColor = kBlack;
 
-    Polygon(const Vec3& v1, const Vec3& v2, const Vec3& v3, Color color);
-    explicit Polygon(const std::array<Vec3, kVertexCount>& vertices, Color color);
-    Polygon(const Polygon& other);
-    Polygon(Polygon&& other);
-    Polygon& operator=(const Polygon& other);
-    Polygon& operator=(Polygon&& other);
-    ~Polygon();
-    void Swap(Polygon& other);
-
-    void SetColor(const Color& color);
-    Color GetColor() const;
-    void ApplyMatrix(const Mat4& mat);
-    Vec3& operator[](Index i);
-    const Vec3& operator[](Index i) const;
-    Vec3 GetUnitNormal() const;
-    Vec3 GetNonUnitNormal() const;
-
-private:
-    Color color_ = kDefaultColor;
-    std::array<Vec3, kVertexCount> vertices_;
-    std::array<Vec3, kVertexCount> normals_;
-    std::optional<std::array<Vec3, kVertexCount>> texture_vertices_ = std::nullopt;
+    std::array<Vec3, kVertexCount> vertices;
+    std::array<Vec3, kVertexCount> normals;
+    std::optional<std::array<Vec2, kVertexCount>> texture_vertices = std::nullopt;
 };
+
+void TransformPolygon(const Mat4& mat, Polygon& polygon);
+Vec3 GetNonUnitNormal(const Polygon& polygon);
+void ProjectiveTransformVector(const Mat4& transformation_matrix, Vec3& vector);
+void ProjectiveTransformPolygon(const Mat4& transformation_matrix, Polygon& polygon);
 
 }  // namespace renderer

@@ -14,22 +14,8 @@ Application::Application()
     : renderer_(),
       camera_(),
       world_(),
-      light_(),
       picture_(renderer::Height{height_}, renderer::Width{width_}),
       window_(sf::VideoMode({width_, height_}), "3D Renderer") {
-    pixels_.reserve(height_ * width_);
-    renderer::Mesh cat("../data/cat.obj");
-    cat.SetColorsRandomly();
-    cat.SetLocalOrigin({0, -12, -20});
-    cat.ApplyMatrix(glm::scale(renderer::Mat4(1.), {0.1, 0.1, 0.1}));
-    renderer::Mesh teapot("../data/teapot.obj");
-    teapot.ApplyMatrix(glm::scale(renderer::Mat4(1.), {2.5, 2.5, 2.5}));
-    teapot.ApplyMatrix(glm::rotate(renderer::Mat4(1.), glm::radians(90.), {1, 0, 0}));
-    teapot.SetColor({200, 200, 200});
-    teapot.SetLocalOrigin({0, -12, 0});
-    light_ = renderer::Light{renderer::Vec3{0, -1, -1}, 1.};
-    world_.AddMesh(cat);
-    world_.AddMesh(teapot);
 }
 
 void Application::Run() {
@@ -92,12 +78,12 @@ void Application::HandleKeyboard() {
 }
 
 void Application::RenderFrame() {
-    renderer_.Render(world_, camera_, light_, std::move(picture_));
+    renderer_.Render(world_, camera_, std::move(picture_));
     pixels_.clear();
     for (size_t x = 0; x < width_; ++x) {
         for (size_t y = 0; y < height_; ++y) {
-            renderer::Color color = picture_.GetPixel(x, y);
-            if (color != renderer::kBlack) {
+            renderer::DiscreteColor color = picture_(x, y);
+            if (color != renderer::color::kBlackDiscrete) {
                 pixels_.emplace_back(sf::Vector2f(x, y), sf::Color(color.x, color.y, color.z));
             }
         }

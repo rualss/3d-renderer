@@ -5,7 +5,9 @@ add_library(3d_pipeline_lib
     polygon.cpp
     world.cpp
     mesh.cpp
-    obj_parser.cpp
-    light.cpp
     geometry.cpp
+    texture.cpp
+    texture_loader.cpp
+    model_loader.cpp
+    object_3d.cpp
 )

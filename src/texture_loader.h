@@ -2,15 +2,10 @@
 
 #include "texture.h"
 #include <filesystem>
-#include <memory>
 
 namespace renderer {
 
-namespace impl {
-
-struct TextureLoaderImpl;
-
-}
+// я не справился написать pimpl :(
 
 class TextureLoader {
 public:
@@ -18,7 +13,7 @@ public:
     bool HasTexture(std::filesystem::path path) const;
 
 private:
-    std::unique_ptr<impl::TextureLoaderImpl> impl_;
+    std::unordered_map<std::filesystem::path, Texture> loaded_textures_;
 };
 
 }  // namespace renderer

@@ -3,12 +3,12 @@
 #include <iterator>
 #include <vector>
 #include "polygon.h"
+#include "material.h"
 
 namespace renderer {
 class Mesh {
 public:
     Mesh();
-    Mesh(const std::string& path);
     template <std::input_iterator InputIt>
         requires std::convertible_to<std::iter_value_t<InputIt>, Polygon>
     Mesh(InputIt first, InputIt last) : polygons_(first, last) {
@@ -23,16 +23,13 @@ public:
     const std::vector<Polygon>& GetPolygons() const;
     void AddPolygon(const Polygon& polygon);
     void AddPolygon(Polygon&& polygon);
-    void SetColor(const Color& color);
     void ApplyMatrix(const Mat4& mat);
-    const Vec3& GetLocalOrigin() const;
-    void SetLocalOrigin(const Vec3& new_origin);
-    void SetColorsRandomly();
+    void SetMaterial(const Material& material);
+    void SetMaterial(Material&& material);
+    const Material& GetMaterial() const;
 
 private:
-    static constexpr Vec3 kDefaultLocalOrigin = {0, 0, 0};
-
+    Material material_;
     std::vector<Polygon> polygons_;
-    Vec3 local_origin_ = kDefaultLocalOrigin;
 };
 }  // namespace renderer
