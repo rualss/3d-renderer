@@ -216,14 +216,14 @@ Color CalculateLightColor(const Light& light, const Vec3& position, const Vec3& 
     if (std::holds_alternative<PointLight>(light)) {
         const PointLight& current_light = std::get<PointLight>(light);
         Vec3 light_direction = (current_light.position - position);
+        ColorValue distance_to_surface = glm::length(light_direction);
         light_direction = glm::normalize(light_direction);
         Vec3 view_direction = glm::normalize(-position);
         Vec3 halfway = glm::normalize(view_direction + light_direction);
-        ColorValue distance_to_surface = glm::length(light_direction);
-        ColorValue attenuation =
-            1.0f / (current_light.constant_attenuation +
-                    current_light.constant_attenuation * distance_to_surface +
-                    current_light.constant_attenuation * distance_to_surface * distance_to_surface);
+        ColorValue attenuation = 1.0f / (current_light.constant_attenuation +
+                                         current_light.linear_attenuation * distance_to_surface +
+                                         current_light.quadratic_attenuation * distance_to_surface *
+                                             distance_to_surface);
 
         ColorValue diff = std::max(glm::dot(light_direction, normal), 0.);
         ColorValue spec = std::pow(std::max(glm::dot(halfway, normal), 0.), material.shininess);

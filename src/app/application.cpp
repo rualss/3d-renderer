@@ -2,6 +2,7 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include "camera.h"
+#include "color.h"
 #include "light.h"
 #include "linalg.h"
 #include "material.h"
@@ -20,15 +21,12 @@ namespace {
 
 World ExampleScene() {
     ModelLoader loader;
-    World world;
-    loader.Open("../data/cat/12221_Cat_v1_l3.obj");
+    loader.Open("../data/floppa2.fbx");
     Object3D floppa = loader.GetObject();
-    PointLight light;
-    light.quadratic_attenuation = 0;
-    light.linear_attenuation = 0;
-    light.position = {0, 0, 100};
-    world.AddLight(light);
+    floppa.ApplyMatrix(glm::scale(Mat4(1.), {0.01, 0.01, 0.01}));
+    World world;
     world.AddObject(floppa);
+    world.AddLight(DirectionalLight{});
     return world;
 }
 

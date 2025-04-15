@@ -7,7 +7,7 @@
 namespace renderer {
 
 struct AmbientLight {
-    Color color = {0.5, 0.5, 0.5};
+    Color color = {0.2, 0.2, 0.2};
 };
 
 struct DirectionalLight {
@@ -18,8 +18,8 @@ struct DirectionalLight {
 struct PointLight {
     Color color = kWhite;
     CoordType constant_attenuation = 1;
-    CoordType linear_attenuation = 0.027;
-    CoordType quadratic_attenuation = 0.0028;
+    CoordType linear_attenuation = 0.022;
+    CoordType quadratic_attenuation = 0.0019;
     Vec3 position = {0, 0, 0};
 };
 

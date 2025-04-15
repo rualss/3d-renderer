@@ -10,8 +10,8 @@ namespace renderer {
 struct Material {
     Color ambient = kWhite;
     Color diffuse = kWhite;
-    Color specular = kRed;
-    CoordType shininess = 64;
+    Color specular = kBlack;
+    CoordType shininess = 32;
 
     bool two_sided = false;
     std::optional<Texture> ambient_texture = std::nullopt;
