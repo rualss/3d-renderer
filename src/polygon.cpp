@@ -1,5 +1,4 @@
 #include "polygon.h"
-#include <glm/ext/quaternion_geometric.hpp>
 
 namespace renderer {
 

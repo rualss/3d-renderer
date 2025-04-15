@@ -9,17 +9,11 @@ namespace renderer {
 
 class Object3D {
 public:
-    Object3D();
-    Object3D(const Object3D& other);
-    Object3D(Object3D&& other);
-    Object3D& operator=(const Object3D& other);
-    Object3D& operator=(Object3D&& other);
-    ~Object3D();
+    Object3D() = default;
+
     template <std::input_iterator InputIt>
     Object3D(InputIt first, InputIt last) : meshes_(first, last) {
-        std::cout << "1: " << meshes_.size() << '\n';
     }
-    Object3D(std::filesystem::path path);
 
     Mesh& operator[](Index i);
     const Mesh& operator[](Index i) const;

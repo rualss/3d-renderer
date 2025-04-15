@@ -50,7 +50,7 @@ void Camera::Rotate(Axis axis, CoordType angle) {
     }
 }
 
-Mat4 Camera::GetWorldToCameraMatrix() const {
+Mat4 Camera::MakeWorldToCameraMatrix() const {
     return glm::transpose(rotation_) * glm::translate(Mat4(1.), -position_);
 }
 

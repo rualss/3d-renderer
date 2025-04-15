@@ -3,13 +3,16 @@
 #include <optional>
 #include "linalg.h"
 #include "texture.h"
+#include "color.h"
+
 namespace renderer {
 
 struct Material {
-    Color ambient = color::kWhite;
-    Color diffuse = color::kWhite;
-    Color specular = color::kBlack;
-    CoordType shininess = 2;
+    Color ambient = kWhite;
+    Color diffuse = kWhite;
+    Color specular = kRed;
+    CoordType shininess = 64;
+
     bool two_sided = false;
     std::optional<Texture> ambient_texture = std::nullopt;
     std::optional<Texture> diffuse_texture = std::nullopt;

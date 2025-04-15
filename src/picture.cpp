@@ -1,39 +1,36 @@
 #include "picture.h"
+#include "color.h"
 #include "linalg.h"
 #include <cassert>
 #include <execution>
 #include <algorithm>
+#include <iostream>
 
 namespace renderer {
 
-Picture::Picture(Height height, Width width)
-    : height_(static_cast<Index>(height)), width_(static_cast<Index>(width)) {
-    assert(height_ > 0 && "Height must be positive");
-    assert(width_ > 0 && "Width must be positive");
-    pixels_.resize(width_ * height_, color::kBlack);
+Picture::Picture() : pixels_(kDefaultPixelsSize, kDefaultColor) {
 }
 
-Picture::Picture(Height height, Width width, const unsigned char* data)
-    : height_(static_cast<Index>(height)), width_(static_cast<Index>(width)) {
-    assert(height_ > 0 && "Height must be positive");
-    assert(width_ > 0 && "Width must be positive");
-    for (Index y = 0; y < height_; ++y) {
-        for (Index x = 0; x < width_; ++x) {
-            Index index = (y * width_ + x) * 3;
-            pixels_.emplace_back(data[index], data[index + 1], data[index + 2]);
-        }
-    }
+Picture::Picture(Height height, Width width) : width_(width) {
+    assert(height > 0 && "Height must be positive");
+    assert(width > 0 && "Width must be positive");
+    pixels_.resize(static_cast<Index>(width) * height, kDefaultColor);
+}
+
+Picture::Picture(Width width, std::vector<DiscreteColor>&& pixels)
+    : width_(width), pixels_(std::move(pixels)) {
+    assert(pixels.size() % width == 0 && "Width must divide number of pixels");
 }
 
 DiscreteColor& Picture::operator()(Index x, Index y) {
     assert(x >= 0 && x < width_ && "x coordinates out of bounds");
-    assert(y >= 0 && y < height_ && "y coordinates out of bounds");
+    assert(y >= 0 && y < GetHeight() && "y coordinates out of bounds");
     return pixels_[width_ * y + x];
 }
 
 const DiscreteColor& Picture::operator()(Index x, Index y) const {
     assert(x >= 0 && x < width_ && "x coordinates out of bounds");
-    assert(y >= 0 && y < height_ && "y coordinates out of bounds");
+    assert(y >= 0 && y < GetHeight() && "y coordinates out of bounds");
     return pixels_[width_ * y + x];
 }
 
@@ -42,15 +39,21 @@ const std::vector<DiscreteColor>& Picture::GetPixels() const {
 }
 
 Index Picture::GetHeight() const {
-    return height_;
+    return pixels_.size() / width_;
 }
 
 Index Picture::GetWidth() const {
     return width_;
 }
 
-void Picture::Reset() {
-    std::fill(std::execution::par, pixels_.begin(), pixels_.end(), color::kBlack);
+void Picture::SetDefaultColor() {
+    std::fill(std::execution::par, pixels_.begin(), pixels_.end(), kDefaultColor);
+}
+
+const DiscreteColor& Picture::SampleColor(Vec2 coords) const {
+    assert(0 <= coords.x <= 1 && 0 <= coords.y <= 1 && "Coords must be in [0, 1]");
+    return (*this)(static_cast<Index>(std::round(coords.x * (GetWidth() - 1))),
+                   static_cast<Index>(std::round(coords.y * (GetHeight() - 1))));
 }
 
 }  // namespace renderer

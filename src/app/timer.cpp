@@ -1,26 +1,40 @@
 #include "timer.h"
 #include <chrono>
 
-namespace application {
+namespace renderer {
+
+using namespace std::chrono;
+
+namespace {
+
+static constexpr Time::TimeUnit kSecondsInMicrosecond = 1 / 1000000.;
+static constexpr Time::TimeUnit kMillisecondsInMicrosecond = 1 / 1000.;
+
+}  // namespace
+
+Time::Time(Duration duration) : duration_(duration) {
+}
+
+Time::TimeUnit Time::ToSeconds() {
+    return duration_cast<microseconds>(duration_).count() * kSecondsInMicrosecond;
+}
+
+Time::TimeUnit Time::ToMilliseconds() {
+    return duration_cast<microseconds>(duration_).count() * kMillisecondsInMicrosecond;
+}
+
+Time::TimeUnit Time::ToMicroseconds() {
+    return duration_cast<microseconds>(duration_).count();
+}
 
 Timer::Timer() : latest_time_(Clock::now()) {
 }
 
-void Timer::Tick() {
+Time Timer::Elapsed() {
     TimePoint current_time = Clock::now();
-    time_delta_ =
-        std::chrono::duration_cast<std::chrono::microseconds>(current_time - latest_time_).count();
+    Time elapsed = (current_time - latest_time_);
     latest_time_ = current_time;
+    return elapsed;
 }
 
-namespace {
-
-static constexpr Timer::TimeUnit kSecondsInMicrosecond = 1 / 1000000.;
-
-}
-
-Timer::TimeUnit Timer::GetDelta() const {
-    return time_delta_ * kSecondsInMicrosecond;
-}
-
-}  // namespace application
+}  // namespace renderer

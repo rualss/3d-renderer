@@ -1,6 +1,7 @@
 #pragma once
 
 #include "linalg.h"
+#include "alias.h"
 
 namespace renderer {
 
@@ -15,7 +16,7 @@ public:
     CoordType GetFarDist() const;
     void Move(const Vec3& shift);
     void Rotate(Axis axis, CoordType angle);
-    Mat4 GetWorldToCameraMatrix() const;
+    Mat4 MakeWorldToCameraMatrix() const;
     Vec3 GetRightDirecton() const;
     Vec3 GetUpDirection() const;
     Vec3 GetForwardDirection() const;
@@ -24,7 +25,7 @@ public:
 private:
     static constexpr Vec3 kDefaultFocalPoint = {0, 0, 0};
     static constexpr CoordType kDefaultNearDist = 0.1;
-    static constexpr CoordType kDefaultFarDist = 200.0;
+    static constexpr CoordType kDefaultFarDist = 500.0;
     static constexpr CoordType kDefaultFOV = 45.0;
     static constexpr Vec3 kDefaultPosition = Vec3{0, 0, 0};
     static constexpr Mat3 kDefaultRotation = Mat4{1.};

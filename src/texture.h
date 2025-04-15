@@ -3,19 +3,18 @@
 #include <memory>
 #include "linalg.h"
 #include "picture.h"
+#include "color.h"
 
 namespace renderer {
 
 class Texture {
 public:
     Texture();
-    Texture(Height height, Width width, const unsigned char* data);
-    Texture(const Texture& texture);
-    Texture(Texture&& texture);
-    ~Texture();
+    Texture(const Picture& picture);
+    Texture(Picture&& picture);
 
-    Texture& operator=(const Texture& other);
-    Texture& operator=(Texture&& other);
+    static Texture From(const Picture& picture);
+    Texture From(Picture&& picture);
     const Picture& operator*() const;
     const Picture* operator->() const;
 

@@ -2,22 +2,32 @@
 
 #include <chrono>
 
-namespace application {
+namespace renderer {
+
+class Time {
+public:
+    using TimeUnit = double;
+    using Duration = std::chrono::high_resolution_clock::duration;
+
+    Time(Duration duration);
+    TimeUnit ToSeconds();
+    TimeUnit ToMilliseconds();
+    TimeUnit ToMicroseconds();
+
+private:
+    Duration duration_;
+};
+
 class Timer {
 public:
     using Clock = std::chrono::high_resolution_clock;
     using TimePoint = Clock::time_point;
-    using TimeUnit = double;
 
     Timer();
-    void Tick();
-    TimeUnit GetDelta() const;
+    Time Elapsed();
 
 private:
-    static constexpr TimeUnit kDefaultDelta = 0.;
-
-    TimeUnit time_delta_ = kDefaultDelta;
     TimePoint latest_time_;
 };
 
-}  // namespace application
+}  // namespace renderer

@@ -1,5 +1,6 @@
 #include "model_loader.h"
 #include "assimp/material.h"
+#include "assimp/scene.h"
 #include "linalg.h"
 #include "object_3d.h"
 #include "polygon.h"
@@ -12,74 +13,81 @@
 #include <assimp/postprocess.h>
 
 namespace renderer {
-ModelLoader::ModelLoader(std::filesystem::path path) {
-    scene_ = importer_.ReadFile(path.c_str(),
-                                aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs);
-    path_ = path;
+
+void ModelLoader::Open(std::filesystem::path path) {
+    const aiScene* model = importer_.ReadFile(
+        path.c_str(), aiProcess_Triangulate | aiProcess_GenNormals | aiProcess_FlipUVs);
+    if (IsInvalid(model)) {
+        loaded_object_ = Object3D{};
+    }
+    std::vector<Material> materials = ParseMaterials(model, path);
+    std::vector<Mesh> meshes = ParseMeshes(model, materials);
+    loaded_object_ = Object3D{meshes.begin(), meshes.end()};
 }
 
 Object3D ModelLoader::GetObject() {
-    if (IsInvalid()) {
-        return Object3D{};
+    return loaded_object_;
+}
+
+bool ModelLoader::IsInvalid(const aiScene* model) {
+    return (model == nullptr) || (model->mFlags & AI_SCENE_FLAGS_INCOMPLETE) ||
+           (model->mRootNode == nullptr);
+}
+
+std::vector<Material> ModelLoader::ParseMaterials(const aiScene* model, Path path) {
+    std::vector<Material> materials;
+    materials.reserve(model->mNumMaterials);
+    for (Index i = 0; i < model->mNumMaterials; ++i) {
+        const aiMaterial* assimp_material = model->mMaterials[i];
+        materials.push_back(std::move(ParseMaterial(model->mMaterials[i], path)));
     }
-    GetMaterials();
-    GetMeshes();
-    std::cout << "2: " << meshes_.size() << '\n';
-    return {meshes_.begin(), meshes_.end()};
+    return materials;
 }
 
-bool ModelLoader::IsInvalid() {
-    return (scene_ == nullptr) || (scene_->mFlags & AI_SCENE_FLAGS_INCOMPLETE) ||
-           (scene_->mRootNode == nullptr);
-}
-
-void ModelLoader::GetMaterials() {
-    materials_.reserve(scene_->mNumMaterials);
-    for (Index i = 0; i < scene_->mNumMaterials; ++i) {
-        const aiMaterial* assimp_material = scene_->mMaterials[i];
-        assert(assimp_material && "Material must not be nullptr");
-        Material material;
-        aiString name;
-        if (assimp_material->Get(AI_MATKEY_NAME, name) == AI_SUCCESS) {
-            if (strcmp(name.C_Str(), "DefaultMaterial") == 0) {
-                materials_.emplace_back(std::move(material));
-                continue;
-            }
+Material ModelLoader::ParseMaterial(const aiMaterial* assimp_material, Path path) {
+    assert(assimp_material && "Material must not be nullptr");
+    Material material;
+    aiString name;
+    if (assimp_material->Get(AI_MATKEY_NAME, name) == AI_SUCCESS) {
+        if (strcmp(name.C_Str(), "DefaultMaterial") == 0) {
+            return material;
         }
-        aiColor3D color{material.ambient.r, material.ambient.g, material.ambient.b};
-        assimp_material->Get(AI_MATKEY_COLOR_AMBIENT, color);
-        material.ambient = {color.r, color.g, color.b};
-
-        color = {material.diffuse.r, material.diffuse.g, material.diffuse.b};
-        assimp_material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
-        material.diffuse = {color.r, color.g, color.b};
-
-        color = {material.specular.r, material.specular.g, material.specular.b};
-        assimp_material->Get(AI_MATKEY_COLOR_SPECULAR, color);
-        material.specular = {color.r, color.g, color.b};
-
-        assimp_material->Get(AI_MATKEY_SHININESS, material.shininess);
-
-        int two_sided = 0;
-        assimp_material->Get(AI_MATKEY_TWOSIDED, two_sided);
-        material.two_sided = (two_sided != 0);
-
-        SetTextures(assimp_material, &material);
-
-        materials_.emplace_back(std::move(material));
     }
+    aiColor3D color{material.ambient.r, material.ambient.g, material.ambient.b};
+    assimp_material->Get(AI_MATKEY_COLOR_AMBIENT, color);
+    material.ambient = {color.r, color.g, color.b};
+
+    color = {material.diffuse.r, material.diffuse.g, material.diffuse.b};
+    assimp_material->Get(AI_MATKEY_COLOR_DIFFUSE, color);
+    material.diffuse = {color.r, color.g, color.b};
+
+    color = {material.specular.r, material.specular.g, material.specular.b};
+    assimp_material->Get(AI_MATKEY_COLOR_SPECULAR, color);
+    material.specular = {color.r, color.g, color.b};
+
+    assimp_material->Get(AI_MATKEY_SHININESS, material.shininess);
+
+    int two_sided = 0;
+    assimp_material->Get(AI_MATKEY_TWOSIDED, two_sided);
+    material.two_sided = (two_sided != 0);
+
+    SetTextures(assimp_material, &material, path);
+    return material;
 }
 
-void ModelLoader::GetMeshes() {
-    for (Index i = 0; i < scene_->mNumMeshes; ++i) {
-        meshes_.emplace_back(std::move(GetMesh(i)));
+void ModelLoader::SetTextures(const aiMaterial* assimp_material, Material* material, Path path) {
+    SetTexture(assimp_material, material, aiTextureType_AMBIENT, path);
+    SetTexture(assimp_material, material, aiTextureType_DIFFUSE, path);
+    SetTexture(assimp_material, material, aiTextureType_SPECULAR, path);
+    if (material->diffuse_texture.has_value() && !material->ambient_texture.has_value()) {
+        material->ambient_texture = material->diffuse_texture;
     }
 }
 
 void ModelLoader::SetTexture(const aiMaterial* assimp_material, Material* material,
-                             aiTextureType type) {
+                             aiTextureType type, Path path) {
     if (assimp_material->GetTextureCount(type) > 0) {
-        std::filesystem::path parent_path = path_.parent_path();
+        std::filesystem::path parent_path = path.parent_path();
         aiString path;
         assimp_material->GetTexture(type, 0, &path);
         std::filesystem::path path_to_texture = parent_path;
@@ -101,20 +109,20 @@ void ModelLoader::SetTexture(const aiMaterial* assimp_material, Material* materi
     }
 }
 
-void ModelLoader::SetTextures(const aiMaterial* assimp_material, Material* material) {
-    SetTexture(assimp_material, material, aiTextureType_AMBIENT);
-    SetTexture(assimp_material, material, aiTextureType_DIFFUSE);
-    SetTexture(assimp_material, material, aiTextureType_SPECULAR);
-    if (material->diffuse_texture.has_value() && !material->ambient_texture.has_value()) {
-        material->ambient_texture = material->diffuse_texture;
+std::vector<Mesh> ModelLoader::ParseMeshes(const aiScene* model,
+                                           const std::vector<Material>& materials) {
+    std::vector<Mesh> meshes;
+    meshes.reserve(model->mNumMeshes);
+    for (Index i = 0; i < model->mNumMeshes; ++i) {
+        meshes.push_back(std::move(ParseMesh(model->mMeshes[i], materials)));
     }
+    return meshes;
 }
 
-Mesh ModelLoader::GetMesh(Index mesh_index) {
-    const aiMesh* assimp_mesh = scene_->mMeshes[mesh_index];
+Mesh ModelLoader::ParseMesh(const aiMesh* assimp_mesh, const std::vector<Material>& materials) {
     assert(assimp_mesh && "Mesh must not be nullptr");
     Mesh mesh;
-    mesh.SetMaterial(materials_[assimp_mesh->mMaterialIndex]);
+    mesh.SetMaterial(materials[assimp_mesh->mMaterialIndex]);
     std::vector<Vec3> vertices;
     std::vector<Vec3> normals;
     std::vector<Vec2> texture_coordinates;
@@ -144,9 +152,9 @@ Mesh ModelLoader::GetMesh(Index mesh_index) {
         }
         for (int i = 0; i < 3; ++i) {
             polygon.vertices[i] = vertices[assimp_face.mIndices[i]];
-            polygon.normals[i] = normals[i];
+            polygon.normals[i] = normals[assimp_face.mIndices[i]];
             if (has_texture) {
-                polygon.texture_vertices.value()[i] = texture_coordinates[i];
+                polygon.texture_vertices.value()[i] = texture_coordinates[assimp_face.mIndices[i]];
             }
         }
         mesh.AddPolygon(std::move(polygon));

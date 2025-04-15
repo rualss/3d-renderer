@@ -9,7 +9,7 @@
 #include "world.h"
 #include "timer.h"
 
-namespace application {
+namespace renderer {
 
 class Application {
     using Window = sf::RenderWindow;
@@ -24,23 +24,19 @@ private:
     void HandleKeyboard();
     void RenderFrame();
 
-    static constexpr renderer::CoordType kDefaultMovementSpeed = 50.;
-    static constexpr renderer::CoordType kDefaultRotationSpeed = 80.;
-    static constexpr Index kDefaultHeight = 720;
-    static constexpr Index kDefaultWidth = 1280;
+    static constexpr CoordType kDefaultMovementSpeed = 50.;
+    static constexpr CoordType kDefaultRotationSpeed = 80.;
     static constexpr std::string kDefaultName = "3D renderer";
 
-    Index height_ = kDefaultHeight;
-    Index width_ = kDefaultWidth;
+    Renderer renderer_;
+    Camera camera_;
+    World world_;
+    Picture picture_;
     Window window_;
-    renderer::Renderer renderer_;
-    renderer::Camera camera_;
-    renderer::World world_;
-    renderer::Picture picture_;
-    renderer::CoordType movement_speed_ = kDefaultMovementSpeed;
-    renderer::CoordType rotation_speed_ = kDefaultRotationSpeed;
+    CoordType movement_speed_ = kDefaultMovementSpeed;
+    CoordType rotation_speed_ = kDefaultRotationSpeed;
     std::vector<sf::Vertex> pixels_;
     Timer timer_;
 };
 
-}  // namespace application
+}  // namespace renderer

@@ -4,6 +4,7 @@
 #include "assimp/material.h"
 #include "material.h"
 #include "mesh.h"
+#include "object_3d.h"
 #include "texture_loader.h"
 
 #include <filesystem>
@@ -12,26 +13,26 @@
 
 namespace renderer {
 
-class Object3D;
-
 class ModelLoader {
 public:
-    ModelLoader(std::filesystem::path path);
+    using Path = std::filesystem::path;
+
+    void Open(Path path);
     Object3D GetObject();
 
 private:
-    bool IsInvalid();
-    void GetMaterials();
-    void GetMeshes();
-    void SetTexture(const aiMaterial* assimp_material, Material* material, aiTextureType type);
-    void SetTextures(const aiMaterial* assimp_material, Material* material);
-    Mesh GetMesh(Index i);
+    bool IsInvalid(const aiScene* model);
+    std::vector<Material> ParseMaterials(const aiScene* model, Path path);
+    Material ParseMaterial(const aiMaterial* assimp_material, Path path);
+    void SetTextures(const aiMaterial* assimp_material, Material* material, Path path);
+    void SetTexture(const aiMaterial* assimp_material, Material* material, aiTextureType type,
+                    Path path);
+    std::vector<Mesh> ParseMeshes(const aiScene* model, const std::vector<Material>& materials);
+    Mesh ParseMesh(const aiMesh* assimp_mesh, const std::vector<Material>& materials);
 
     Assimp::Importer importer_;
-    std::filesystem::path path_;
-    const aiScene* scene_;
-    std::vector<Material> materials_;
-    std::vector<Mesh> meshes_;
     TextureLoader texture_loader_;
+    Object3D loaded_object_;
 };
+
 }  // namespace renderer

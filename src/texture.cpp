@@ -1,24 +1,32 @@
 #include "texture.h"
 #include <cassert>
 #include <memory>
+#include <vector>
+#include "alias.h"
+#include "color.h"
 #include "linalg.h"
 #include "picture.h"
 
 namespace renderer {
+
 Texture::Texture() {
-    unsigned char data[3] = {255, 255, 255};
-    impl_ = std::make_shared<const Picture>(Height{1}, Width{1}, data);
+    std::vector<DiscreteColor> pixel(1, kWhite);
+    impl_ = std::make_shared<const Picture>(Width{1}, std::move(pixel));
 }
 
-Texture::Texture(Height height, Width width, const unsigned char* data) {
-    impl_ = std::make_shared<const Picture>(height, width, data);
+Texture::Texture(const Picture& picture) : impl_(std::make_shared<const Picture>(picture)) {
 }
 
-Texture::Texture(const Texture& texture) = default;
-Texture::Texture(Texture&& texture) = default;
-Texture::~Texture() = default;
-Texture& Texture::operator=(const Texture& other) = default;
-Texture& Texture::operator=(Texture&& other) = default;
+Texture::Texture(Picture&& picture) : impl_(std::make_shared<const Picture>(std::move(picture))) {
+}
+
+Texture Texture::From(const Picture& picture) {
+    return Texture(picture);
+}
+
+Texture Texture::From(Picture&& picture) {
+    return Texture(std::move(picture));
+}
 
 const Picture& Texture::operator*() const {
     return *impl_;
@@ -30,9 +38,7 @@ const Picture* Texture::operator->() const {
 
 const DiscreteColor& Texture::SampleColor(Vec2 coords) const {
     assert(0 <= coords.x <= 1 && 0 <= coords.y <= 1 && "Texture coordinates must be in [0, 1]");
-
-    return (*impl_)(static_cast<Index>(std::round(coords.x * (impl_->GetWidth() - 1))),
-                    static_cast<Index>(std::round(coords.y * (impl_->GetHeight() - 1))));
+    return impl_->SampleColor(coords);
 }
 
 }  // namespace renderer

@@ -10,4 +10,6 @@ add_library(3d_pipeline_lib
     texture_loader.cpp
     model_loader.cpp
     object_3d.cpp
+    z_buffer.cpp
+    color.cpp
 )

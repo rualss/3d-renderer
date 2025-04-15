@@ -7,18 +7,6 @@
 
 namespace renderer {
 
-Object3D::Object3D() = default;
-Object3D::Object3D(const Object3D& other) = default;
-Object3D::Object3D(Object3D&& other) = default;
-Object3D& Object3D::operator=(const Object3D& other) = default;
-Object3D& Object3D::operator=(Object3D&& other) = default;
-Object3D::~Object3D() = default;
-
-Object3D::Object3D(std::filesystem::path path) {
-    ModelLoader model_loader(path);
-    (*this) = std::move(model_loader.GetObject());
-}
-
 Mesh& Object3D::operator[](Index i) {
     return meshes_[i];
 }
@@ -32,7 +20,7 @@ void Object3D::AddMesh(const Mesh& mesh) {
 }
 
 void Object3D::AddMesh(Mesh&& mesh) {
-    meshes_.emplace_back(mesh);
+    meshes_.push_back(std::move(mesh));
 }
 
 void Object3D::ApplyMatrix(const Mat4& mat) {

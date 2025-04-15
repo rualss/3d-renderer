@@ -8,17 +8,12 @@
 namespace renderer {
 class Mesh {
 public:
-    Mesh();
+    Mesh() = default;
+
     template <std::input_iterator InputIt>
         requires std::convertible_to<std::iter_value_t<InputIt>, Polygon>
     Mesh(InputIt first, InputIt last) : polygons_(first, last) {
     }
-    Mesh(const Mesh& other);
-    Mesh(Mesh&& other) noexcept;
-    Mesh& operator=(const Mesh& other);
-    Mesh& operator=(Mesh&& other);
-    ~Mesh();
-    void Swap(Mesh& other);
 
     const std::vector<Polygon>& GetPolygons() const;
     void AddPolygon(const Polygon& polygon);

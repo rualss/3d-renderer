@@ -2,7 +2,6 @@
 
 namespace renderer {
 
-World::World() = default;
 World::World(std::vector<Object3D>&& objects) : objects_(std::move(objects)) {
 }
 
@@ -18,7 +17,19 @@ void World::AddObject(const Object3D& object) {
 }
 
 void World::AddObject(Object3D&& object) {
-    objects_.emplace_back(std::move(object));
+    objects_.push_back(std::move(object));
+}
+
+void World::AddLight(const Light& light) {
+    lights_.push_back(light);
+}
+
+void World::AddLight(Light&& light) {
+    lights_.push_back(std::move(light));
+}
+
+const std::vector<Light>& World::GetLights() const {
+    return lights_;
 }
 
 }  // namespace renderer
