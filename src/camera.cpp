@@ -70,4 +70,8 @@ const Mat4& Camera::GetRotationMatrix() const {
     return rotation_;
 }
 
+const Vec3& Camera::GetPosition() const {
+    return position_;
+}
+
 }  // namespace renderer

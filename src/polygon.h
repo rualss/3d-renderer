@@ -16,6 +16,7 @@ public:
 };
 
 void TransformPolygon(const Mat4& mat, Polygon& polygon);
+void TransformNormals(const Mat4& mat, Polygon& polygon);
 Vec3 GetNonUnitNormal(const Polygon& polygon);
 void ProjectiveTransformVector(const Mat4& transformation_matrix, Vec3& vector);
 void ProjectiveTransformPolygon(const Mat4& transformation_matrix, Polygon& polygon);

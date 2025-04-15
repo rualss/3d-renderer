@@ -4,7 +4,6 @@
 #include <cassert>
 #include <execution>
 #include <algorithm>
-#include <iostream>
 
 namespace renderer {
 

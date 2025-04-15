@@ -24,7 +24,9 @@ World ExampleScene() {
     loader.Open("../data/cat/12221_Cat_v1_l3.obj");
     Object3D floppa = loader.GetObject();
     PointLight light;
-    light.position = {0, 0, 10};
+    light.quadratic_attenuation = 0;
+    light.linear_attenuation = 0;
+    light.position = {0, 0, 100};
     world.AddLight(light);
     world.AddObject(floppa);
     return world;

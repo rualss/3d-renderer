@@ -21,6 +21,7 @@ public:
     Vec3 GetUpDirection() const;
     Vec3 GetForwardDirection() const;
     const Mat4& GetRotationMatrix() const;
+    const Vec3& GetPosition() const;
 
 private:
     static constexpr Vec3 kDefaultFocalPoint = {0, 0, 0};

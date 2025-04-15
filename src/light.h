@@ -11,15 +11,15 @@ struct AmbientLight {
 };
 
 struct DirectionalLight {
-    Color color = {0.5, 0.5, 0.5};
+    Color color = kWhite;
     Vec3 direction = {0, 0, -1};
 };
 
 struct PointLight {
     Color color = kWhite;
     CoordType constant_attenuation = 1;
-    CoordType linear_attenuation = 0.14;
-    CoordType quadratic_attenuation = 0.07;
+    CoordType linear_attenuation = 0.027;
+    CoordType quadratic_attenuation = 0.0028;
     Vec3 position = {0, 0, 0};
 };
 

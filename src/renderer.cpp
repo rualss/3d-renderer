@@ -7,11 +7,13 @@
 #include <variant>
 #include <optional>
 #include <vector>
+#include "camera.h"
 #include "color.h"
 #include "glm/geometric.hpp"
 #include "light.h"
 #include "linalg.h"
 #include "geometry.h"
+#include "polygon.h"
 
 namespace renderer {
 
@@ -262,6 +264,28 @@ DiscreteColor CalculateColor(const Vec3& barycentric, const Polygon& polygon,
     return ColorToDiscrete(light_color);
 }
 
+Light GetTransformedLight(const Camera& camera, const Light& light) {
+    if (std::holds_alternative<AmbientLight>(light)) {
+        return light;
+    }
+    if (std::holds_alternative<DirectionalLight>(light)) {
+        DirectionalLight current_light = std::get<DirectionalLight>(light);
+        Vec4 dir(current_light.direction, 0);
+        dir = glm::transpose(camera.GetRotationMatrix()) * dir;
+        current_light.direction = Vec3(dir);
+        return current_light;
+    }
+    if (std::holds_alternative<PointLight>(light)) {
+        PointLight current_light = std::get<PointLight>(light);
+        Vec4 pos(current_light.position, 1.);
+        pos = camera.MakeWorldToCameraMatrix() * pos;
+        current_light.position = Vec3(pos);
+        return current_light;
+    }
+    assert(false);
+    return AmbientLight{};
+}
+
 }  // namespace
 
 void Renderer::Render(const World& world, const Camera& camera, Picture* picture) {
@@ -301,17 +325,24 @@ void Renderer::RenderMesh(const Mesh& mesh, const Camera& camera, const std::vec
         Polygon translated_polygon(polygon);
         TransformPolygon(transform_to_camera, translated_polygon);
         if (mesh.GetMaterial().two_sided || IsVisible(translated_polygon)) {
+            TransformNormals(glm::transpose(camera.GetRotationMatrix()), translated_polygon);
             polygons.emplace_back(std::move(translated_polygon));
         }
     }
     ClipPolygons(projection_matrix, polygons);
+    std::vector<Light> transformed_lights;
+    transformed_lights.reserve(lights.size());
+    for (const Light& light : lights) {
+        transformed_lights.push_back(GetTransformedLight(camera, light));
+    }
     std::vector<Polygon> transformed_polygons = polygons;
     for (Polygon& transformed_polygon : transformed_polygons) {
         ProjectiveTransformPolygon(projection_matrix, transformed_polygon);
         TransformPolygonToScreenSpace(transformed_polygon, height, width);
     }
     for (Index i = 0; i < transformed_polygons.size(); ++i) {
-        DrawPolygon(picture, transformed_polygons[i], polygons[i], mesh.GetMaterial(), lights);
+        DrawPolygon(picture, transformed_polygons[i], polygons[i], mesh.GetMaterial(),
+                    transformed_lights);
     }
 }
 

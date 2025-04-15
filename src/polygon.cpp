@@ -1,11 +1,19 @@
 #include "polygon.h"
+#include "glm/geometric.hpp"
 
 namespace renderer {
 
 void TransformPolygon(const Mat4& mat, Polygon& polygon) {
     for (int i = 0; i < Polygon::kVertexCount; ++i) {
-        Vec4 tmp(polygon.vertices[i], 1.);
-        polygon.vertices[i] = Vec3(mat * tmp);
+        Vec4 tmp_vertex(polygon.vertices[i], 1.);
+        polygon.vertices[i] = Vec3(mat * tmp_vertex);
+    }
+}
+
+void TransformNormals(const Mat4& mat, Polygon& polygon) {
+    for (int i = 0; i < Polygon::kVertexCount; ++i) {
+        Vec4 tmp_normal(polygon.normals[i], 1.);
+        polygon.normals[i] = glm::normalize(Vec3(mat * tmp_normal));
     }
 }
 
