@@ -19,4 +19,5 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glm)
 
+target_include_directories(3d_pipeline_lib PRIVATE ${CMAKE_SOURCE_DIR}/submodules/stb)
 target_link_libraries(3d_pipeline_lib PUBLIC glm::glm assimp::assimp)
