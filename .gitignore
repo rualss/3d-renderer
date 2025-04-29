@@ -30,3 +30,12 @@
 *.exe
 *.out
 *.app
+
+# Build files
+/build/
+/build_debug/
+compile_commands.json
+/.cache/
+
+# 3D Models
+/data/

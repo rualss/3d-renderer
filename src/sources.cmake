@@ -1,0 +1,15 @@
+add_library(3d_pipeline_lib
+    camera.cpp
+    picture.cpp
+    renderer.cpp
+    polygon.cpp
+    world.cpp
+    mesh.cpp
+    geometry.cpp
+    texture.cpp
+    texture_loader.cpp
+    model_loader.cpp
+    object_3d.cpp
+    z_buffer.cpp
+    color.cpp
+)
